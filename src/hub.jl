@@ -32,6 +32,16 @@ function ManyUI.execute!(model::HubModel, action::QuitHub)
     model.should_quit = true
 end
 
+const HUB_SHEET = parse_css("""
+    #screen { layout: column; gap: 1; padding: 1; }
+    #title { color: #7dd3fc; shrink: 0; }
+    #backend_panel { layout: row; gap: 2; shrink: 0; border: round #475569; padding: 1; }
+    #backend_label { color: #cbd5e1; }
+    #demolist { grow: 1; border: round #475569; color: #e2e8f0; }
+    Button { color: #bbf7d0; shrink: 0; }
+    RadioGroup { color: #e2e8f0; }
+""")
+
 function ManyUI.render(model::HubModel, ::TUI)
     lst = List(model.demos, (w) -> begin
         idx = w.sel.cursor
@@ -42,37 +52,37 @@ function ManyUI.render(model::HubModel, ::TUI)
         end
     end; id=:demolist)
 
-    modes = ["tui", "web", "webtui"]
-    rg = RadioGroup(modes, (w) -> begin
+    display_modes = ["TUI", "Web (Native)", "WebTerm"]
+    internal_modes = ["tui", "web", "webtui"]
+    
+    rg = RadioGroup(display_modes, (w) -> begin
         idx = w.selected[]
-        if idx > 0 && idx <= length(modes)
-            ManyUI.execute!(model, SetMode(modes[idx]))
+        if idx > 0 && idx <= length(display_modes)
+            ManyUI.execute!(model, SetMode(internal_modes[idx]))
         end
     end; id=:backend_mode)
     
     # Initialize UI state
-    idx = findfirst(==(model.mode), modes)
+    idx = findfirst(==(model.mode), internal_modes)
     if idx !== nothing
         rg.selected[] = idx
         rg.cursor[] = idx
     end
 
     Container(
-        Label("🚀 ManyUI Demos Hub (Tab to focus list, Enter to launch)"),
-        Label(""),
+        Label("🚀 ManyUI Demos Hub (Tab to navigate, Space to select backend, Enter to launch)"; id=:title),
         Container(
-            Container(Label("Choose Backend:"); classes=[:backend_label]),
+            Label("Choose Backend:"; id=:backend_label),
             rg;
-            classes=[:backend_panel]
+            id=:backend_panel
         ),
-        Label(""),
         lst,
-        Label(""),
         Button("Quit", btn -> begin
             ManyUI.execute!(model, QuitHub())
             app = ManyUI.app(btn)
             app !== nothing && ManyUITUI.quit!(app)
-        end)
+        end);
+        id=:screen
     )
 end
 
@@ -84,7 +94,7 @@ function run_hub()
         model = HubModel(demo_files, "", "tui", false)
         
         println("\nStarting ManyUI Hub...")
-        ManyUITUI.launch(model, TUI())
+        ManyUITUI.launch(model, TUI(); stylesheet=HUB_SHEET)
         
         if model.should_quit || model.selected == ""
             println("Exiting hub.")
