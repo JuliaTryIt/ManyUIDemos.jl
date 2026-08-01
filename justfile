@@ -1,6 +1,10 @@
 default:
 	@just --list
 
+# Run the central interactive demo hub
+hub:
+	julia --project=@. -e 'using ManyUIDemos; ManyUIDemos.command_main(["hub"])'
+
 # Run the architecture harness demo
 harness:
 	julia --project=@. -e 'using ManyUIDemos; ManyUIDemos.command_main(["harness"])'
