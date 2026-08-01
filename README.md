@@ -1,24 +1,15 @@
 # ManyUIDemos.jl
 
-A centralized demonstration hub for the `ManyUI` ecosystem.
+**ManyUIDemos** is a centralized demonstration hub showcasing how to write a domain model once and launch it across all `ManyUI` projections (TUI, Web, CLI).
 
-## Usage
-`ManyUIDemos` aggregates the functionalities of `ManyUI`, `ManyUIWeb`, and `ManyUICLI` into a single testable harness.
-It exposes a command-line interface (powered by `ManyUICLI`) to launch the demos.
+## 📖 Documentation
 
-### Running Demos
+For the complete API reference, features overview, quickstart guides, and advanced examples, please see the central documentation repository:
 
-From the monorepo root, you can use the `justfile` recipes:
-```bash
-# Launch the CLI projection
-just cli arg1 arg2 ...
+👉 **[Read the Documentation (ManyUIDoc)](https://s-celles.github.io/ManyUIDoc.jl/)**
 
-# Launch the WebTerminal projection
-just demo webtui
+## Installation
 
-# Launch the Native HTML Web projection
-just demo web
-
-# Launch the classic TUI
-just demo tui
+```julia
+import Pkg; Pkg.add("ManyUIDemos")
 ```
