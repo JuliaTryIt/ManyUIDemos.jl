@@ -120,28 +120,34 @@ every frame and throws the diff away.
 tick!(app) = post!(app, TickEvent(time()))
 
 function main()
-    port = length(ARGS) >= 1 ? parse(Int, ARGS[1]) : 8000
-    server = serve(life_app; port = port, stylesheet = SHEET,
-                   title = "Game of Life")
-    # One timer per SESSION would be better; this drives every session's
-    # board through the server's session list.
-    println("Life running at ", ManyUIWeb.url(server))
-    println("Ctrl-C to stop.")
-    try
-        while true
-            sleep(0.1)
-            for s in sessions_of(server)
-                r = s.app.root
-                r isa LifeBoard || continue
-                step!(r)
+    mode = length(ARGS) >= 1 ? ARGS[1] : "web"
+    if mode == "tui" || mode == "webtui"
+        println("⚠️  This specific demo ($title) uses a custom server-side game loop.")
+        println("Currently, it is only fully supported in 'web' mode.")
+        println("Please select 'Web (Native)' from the Hub for this demo.")
+        println("Press Enter to exit...")
+        readline()
+    else
+        port = 8000
+        server = serve(life_app; port = port, stylesheet = SHEET, title = "Life")
+        println("Life running at ", ManyUIWeb.url(server))
+        println("Ctrl-C to stop.")
+        try
+            while true
+                sleep(0.05)
+                for s in sessions_of(server)
+                    r = s.app.root
+                    r isa Life || continue
+                    step!(r)
                 tick!(s.app)
+                end
             end
+        catch e
+            e isa InterruptException || rethrow()
+        finally
+            ManyUITUI.stop!(server)
+            println("stopped")
         end
-    catch e
-        e isa InterruptException || rethrow()
-    finally
-        ManyUITUI.stop!(server)
-        println("stopped")
     end
 end
 

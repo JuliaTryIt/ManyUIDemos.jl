@@ -172,26 +172,34 @@ every frame and throws the diff away.
 tick!(app) = post!(app, TickEvent(time()))
 
 function main()
-    port = length(ARGS) >= 1 ? parse(Int, ARGS[1]) : 8000
-    server = serve(snake_app; port = port, stylesheet = SHEET,
-                   title = "Snake")
-    println("Snake running at ", ManyUIWeb.url(server))
-    println("Ctrl-C to stop.")
-    try
-        while true
-            sleep(0.12)
-            for s in sessions_of(server)
-                r = s.app.root
-                r isa Snake || continue
-                step!(r)
+    mode = length(ARGS) >= 1 ? ARGS[1] : "web"
+    if mode == "tui" || mode == "webtui"
+        println("⚠️  This specific demo ($title) uses a custom server-side game loop.")
+        println("Currently, it is only fully supported in 'web' mode.")
+        println("Please select 'Web (Native)' from the Hub for this demo.")
+        println("Press Enter to exit...")
+        readline()
+    else
+        port = 8000
+        server = serve(snake_app; port = port, stylesheet = SHEET, title = "Snake")
+        println("Snake running at ", ManyUIWeb.url(server))
+        println("Ctrl-C to stop.")
+        try
+            while true
+                sleep(0.12)
+                for s in sessions_of(server)
+                    r = s.app.root
+                    r isa Snake || continue
+                    step!(r)
                 tick!(s.app)
+                end
             end
+        catch e
+            e isa InterruptException || rethrow()
+        finally
+            ManyUITUI.stop!(server)
+            println("stopped")
         end
-    catch e
-        e isa InterruptException || rethrow()
-    finally
-        ManyUITUI.stop!(server)
-        println("stopped")
     end
 end
 
