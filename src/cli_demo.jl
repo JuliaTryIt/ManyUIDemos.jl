@@ -1,6 +1,6 @@
 module CLIDemo
 
-using ManyUI
+using ManyUI, ManyUITUI
 using ManyUICLI
 using Comonicon
 

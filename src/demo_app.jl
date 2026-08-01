@@ -1,6 +1,6 @@
 module DemoApp
 
-using ManyUI
+using ManyUI, ManyUITUI
 using ManyUIWeb
 
 using Dates
@@ -40,7 +40,7 @@ end
 
 # 3.1 TUI Projection
 function ManyUI.render(model::MyModel, ::TUI)
-    # Build the visual widget tree using ManyUI components
+    # Build the visual widget tree using ManyUI, ManyUITUI components
     log_labels = [Label(msg) for msg in model.log]
     
     Container(
@@ -50,7 +50,7 @@ function ManyUI.render(model::MyModel, ::TUI)
             ManyUI.execute!(model, Quit())
             app = ManyUI.app(btn)
             if app !== nothing
-                ManyUI.quit!(app)
+                ManyUITUI.quit!(app)
             end
         end),
         Container(
@@ -79,13 +79,13 @@ const global_model = MyModel("data.csv", true, ["App started"])
 function run_demo(mode::String="tui")
     if mode == "tui"
         println("Launching in TUI mode (Press Ctrl-C or click Quit to exit)...")
-        ManyUI.launch(global_model, TUI())
+        ManyUITUI.launch(global_model, TUI())
     elseif mode == "webtui"
         println("Launching in WebTerminal mode at http://localhost:8000 ...")
-        ManyUI.launch(global_model, WebTerminal(); port=8000)
+        ManyUITUI.launch(global_model, WebTerminal(); port=8000)
     elseif mode == "web"
         println("Launching in WebNative mode at http://localhost:8080 ...")
-        ManyUI.launch(global_model, WebNative(); port=8080)
+        ManyUITUI.launch(global_model, WebNative(); port=8080)
     else
         println("Unknown mode: $mode")
     end
