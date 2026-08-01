@@ -77,9 +77,9 @@ end
 function main()
     mode = length(ARGS) >= 1 ? ARGS[1] : "web"
     if mode == "tui"
-        ManyUITUI.launch(dashboard_app, TUI(); stylesheet = SHEET)
+        ManyUITUI.launch(dashboard_app; stylesheet = SHEET)
     elseif mode == "webtui"
-        ManyUITUI.launch(dashboard_app, WebTerminal(); port = 8000, stylesheet = SHEET)
+        ManyUITUI.launch(dashboard_app; backend = WebBackend(port = 8000), stylesheet = SHEET)
     else
         server = serve(dashboard_app; port = 8000, stylesheet = SHEET, title = "Dashboard")
         println("Dashboard running at ", ManyUIWeb.url(server))

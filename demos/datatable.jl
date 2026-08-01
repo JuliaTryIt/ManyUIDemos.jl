@@ -67,9 +67,9 @@ end
 function main()
     mode = length(ARGS) >= 1 ? ARGS[1] : "web"
     if mode == "tui"
-        ManyUITUI.launch(table_app, TUI(); stylesheet = SHEET)
+        ManyUITUI.launch(table_app; stylesheet = SHEET)
     elseif mode == "webtui"
-        ManyUITUI.launch(table_app, WebTerminal(); port = 8000, stylesheet = SHEET)
+        ManyUITUI.launch(table_app; backend = WebBackend(port = 8000), stylesheet = SHEET)
     else
         server = serve(table_app; port = 8000, stylesheet = SHEET, title = "Table")
         println("Table running at ", ManyUIWeb.url(server))

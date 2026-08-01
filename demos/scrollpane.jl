@@ -166,9 +166,9 @@ tick!(app) = post!(app, TickEvent(time()))
 function main()
     mode = length(ARGS) >= 1 ? ARGS[1] : "web"
     if mode == "tui"
-        ManyUITUI.launch(log_app, TUI(); stylesheet = SHEET)
+        ManyUITUI.launch(log_app; stylesheet = SHEET)
     elseif mode == "webtui"
-        ManyUITUI.launch(log_app, WebTerminal(); port = 8000, stylesheet = SHEET)
+        ManyUITUI.launch(log_app; backend = WebBackend(port = 8000), stylesheet = SHEET)
     else
         server = serve(log_app; port = 8000, stylesheet = SHEET, title = "Log")
         println("Log running at ", ManyUIWeb.url(server))
