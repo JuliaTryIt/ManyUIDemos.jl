@@ -24,16 +24,14 @@ function ManyUI.execute!(model::HubModel, action::QuitHub)
 end
 
 function ManyUI.render(model::HubModel, ::TUI)
-    lst = List(model.demos; id=:demolist)
-    
-    # Listen to Enter key on the list to launch
-    ManyUI.on!(lst, :submit, (w) -> begin
-        if w.selected > 0 && w.selected <= length(model.demos)
-            ManyUI.execute!(model, LaunchDemo(model.demos[w.selected]))
+    lst = List(model.demos, (w) -> begin
+        idx = w.sel.cursor
+        if idx > 0 && idx <= length(model.demos)
+            ManyUI.execute!(model, LaunchDemo(model.demos[idx]))
             app = ManyUI.app(w)
             app !== nothing && ManyUITUI.quit!(app)
         end
-    end)
+    end; id=:demolist)
     
     lst.focusable = true
 
