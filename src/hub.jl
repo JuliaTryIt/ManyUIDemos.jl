@@ -11,12 +11,21 @@ end
 mutable struct HubModel
     demos::Vector{String}
     selected::String
+    mode::String
     should_quit::Bool
 end
 
 function ManyUI.execute!(model::HubModel, action::LaunchDemo)
     model.selected = action.filename
     model.should_quit = false
+end
+
+struct SetMode <: Action
+    mode::String
+end
+
+function ManyUI.execute!(model::HubModel, action::SetMode)
+    model.mode = action.mode
 end
 
 function ManyUI.execute!(model::HubModel, action::QuitHub)
@@ -33,8 +42,29 @@ function ManyUI.render(model::HubModel, ::TUI)
         end
     end; id=:demolist)
 
+    modes = ["tui", "web", "webtui"]
+    rg = RadioGroup(modes, (w) -> begin
+        idx = w.selected[]
+        if idx > 0 && idx <= length(modes)
+            ManyUI.execute!(model, SetMode(modes[idx]))
+        end
+    end; id=:backend_mode)
+    
+    # Initialize UI state
+    idx = findfirst(==(model.mode), modes)
+    if idx !== nothing
+        rg.selected[] = idx
+        rg.cursor[] = idx
+    end
+
     Container(
         Label("🚀 ManyUI Demos Hub (Tab to focus list, Enter to launch)"),
+        Label(""),
+        Container(
+            Container(Label("Choose Backend:"); classes=[:backend_label]),
+            rg;
+            classes=[:backend_panel]
+        ),
         Label(""),
         lst,
         Label(""),
@@ -51,7 +81,7 @@ function run_hub()
     demo_files = filter(f -> endswith(f, ".jl") && f != "tachikoma_web.jl", readdir(demos_dir))
     
     while true
-        model = HubModel(demo_files, "", false)
+        model = HubModel(demo_files, "", "tui", false)
         
         println("\nStarting ManyUI Hub...")
         ManyUITUI.launch(model, TUI())
@@ -62,14 +92,14 @@ function run_hub()
         end
         
         println("\n=======================================================")
-        println("Launching: $(model.selected)")
+        println("Launching: $(model.selected) in $(model.mode) mode")
         println("=======================================================\n")
         
         demo_path = joinpath(demos_dir, model.selected)
         
         # Run the demo as a subprocess so it gets a clean environment and terminal state
         try
-            cmd = `$(Base.julia_cmd()) --project=$(pkgdir(@__MODULE__)) $demo_path`
+            cmd = `$(Base.julia_cmd()) --project=$(pkgdir(@__MODULE__)) $demo_path $(model.mode)`
             run(cmd)
         catch e
             println("Demo exited or was interrupted.")
