@@ -5,12 +5,20 @@ using Comonicon
 include("harness_demo.jl")
 include("demo_app.jl")
 include("cli_demo.jl")
+include("hub.jl")
 
 """
 Run the architecture harness demo (validates the core loop without UI).
 """
 @cast function harness()
     ManyUIHarness.run_harness()
+end
+
+"""
+Run the central demo hub to interactively select and launch demos.
+"""
+@cast function hub()
+    HubApp.run_hub()
 end
 
 """
