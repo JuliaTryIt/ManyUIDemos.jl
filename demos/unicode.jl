@@ -95,9 +95,9 @@ end
 function main()
     mode = length(ARGS) >= 1 ? ARGS[1] : "web"
     if mode == "tui"
-        ManyUITUI.launch(unicode_app(), TUI(); stylesheet = SHEET)
+        ManyUITUI.launch(unicode_app, TUI(); stylesheet = SHEET)
     elseif mode == "webtui"
-        ManyUITUI.launch(unicode_app(), WebTerminal(); port = 8000, stylesheet = SHEET)
+        ManyUITUI.launch(unicode_app, WebTerminal(); port = 8000, stylesheet = SHEET)
     else
         server = serve(unicode_app; port = 8000, stylesheet = SHEET, title = "Unicode")
         println("Unicode running at ", ManyUIWeb.url(server))

@@ -91,9 +91,9 @@ end
 function main()
     mode = length(ARGS) >= 1 ? ARGS[1] : "web"
     if mode == "tui"
-        ManyUITUI.launch(gallery_app(), TUI(); stylesheet = SHEET)
+        ManyUITUI.launch(gallery_app, TUI(); stylesheet = SHEET)
     elseif mode == "webtui"
-        ManyUITUI.launch(gallery_app(), WebTerminal(); port = 8000, stylesheet = SHEET)
+        ManyUITUI.launch(gallery_app, WebTerminal(); port = 8000, stylesheet = SHEET)
     else
         server = serve(gallery_app; port = 8000, stylesheet = SHEET, title = "Gallery")
         println("Gallery running at ", ManyUIWeb.url(server))
