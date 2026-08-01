@@ -32,8 +32,6 @@ function ManyUI.render(model::HubModel, ::TUI)
             app !== nothing && ManyUITUI.quit!(app)
         end
     end; id=:demolist)
-    
-    lst.focusable = true
 
     Container(
         Label("🚀 ManyUI Demos Hub (Tab to focus list, Enter to launch)"),
