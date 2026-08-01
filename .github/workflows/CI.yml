@@ -48,9 +48,6 @@ jobs:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
       - uses: julia-actions/cache@v2
-      - name: Develop local dependencies
-        run: |
-          julia --project=@. -e 'using Pkg; Pkg.develop(path="../ManyUI"); Pkg.develop(path="../ManyUIWeb"); Pkg.develop(path="../ManyUICLI"); Pkg.develop(path="../Tachikoma"); Pkg.instantiate()'
       - name: Authenticate to private repositories
         env:
           MANYUI_READ_TOKEN: ${{ secrets.MANYUI_READ_TOKEN }}
@@ -74,6 +71,7 @@ jobs:
           push!(deps, PackageSpec(url="https://github.com/s-celles/ManyUITUI.jl"))
           push!(deps, PackageSpec(url="https://github.com/s-celles/ManyUICLI.jl"))
           push!(deps, PackageSpec(url="https://github.com/s-celles/ManyUIWeb.jl"))
+          push!(deps, PackageSpec(url="https://github.com/s-celles/Tachikoma.jl"))
           Pkg.develop(deps)
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
