@@ -42,7 +42,7 @@ const HUB_SHEET = parse_css("""
     #demolist { grow: 1; border: round #475569; color: #e2e8f0; }
     
     #right_panel { layout: column; gap: 1; grow: 1; border: round #475569; padding: 1; }
-    #demo_title { color: #bae6fd; bold: true; shrink: 0; }
+    #demo_title { color: #bae6fd; shrink: 0; }
     #compat_label { color: #94a3b8; shrink: 0; }
     #backend_panel { layout: column; gap: 1; shrink: 0; }
     #backend_label { color: #cbd5e1; }
