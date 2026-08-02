@@ -170,7 +170,7 @@ function main()
     elseif mode == "webtui"
         ManyUITUI.launch(log_app; backend = WebBackend(port = 8000), stylesheet = SHEET)
     else
-        server = serve(log_app; port = 8000, stylesheet = SHEET, title = "Log")
+        server = ManyUITUI.launch(log_app, ManyUI.WebNative(); port = 8000)
         println("Log running at ", ManyUIWeb.url(server))
         println("Ctrl-C to stop.")
         try

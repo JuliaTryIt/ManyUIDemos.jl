@@ -42,4 +42,13 @@ end
 # ManyUIDemos - A collection of demonstrations for the ManyUI ecosystem.
 Comonicon.@main
 
+function __init__()
+    # Try to load TachikomaDemos to trigger the weak dependency extension
+    # so that the Tachikoma Demos show up in the hub automatically if installed.
+    try
+        Base.require(@__MODULE__, :TachikomaDemos)
+    catch
+    end
+end
+
 end # module ManyUIDemos

@@ -40,7 +40,7 @@ const HUB_SHEET = parse_css("""
     #main_area { layout: row; gap: 2; grow: 1; }
     #left_panel { layout: column; gap: 1; width: 30; shrink: 0; }
     #demolist { grow: 1; border: round #475569; color: #e2e8f0; }
-    
+
     #right_panel { layout: column; gap: 1; grow: 1; border: round #475569; padding: 1; }
     #demo_title { color: #bae6fd; shrink: 0; }
     #demo_desc { color: #f1f5f9; grow: 1; }
@@ -48,7 +48,7 @@ const HUB_SHEET = parse_css("""
     #backend_panel { layout: column; gap: 1; shrink: 0; }
     #backend_label { color: #cbd5e1; }
     #btn_panel { layout: row; gap: 2; shrink: 0; }
-    
+
     Button { color: #bbf7d0; shrink: 0; }
     .primary_btn { color: #000000; background: #22c55e; }
     RadioGroup { color: #e2e8f0; }
@@ -60,10 +60,11 @@ const COMPAT_MATRIX = Dict(
     "gallery.jl"   => (tui=true, web=true, webtui=true),
     "scrollpane.jl"=> (tui=true, web=true, webtui=true),
     "unicode.jl"   => (tui=true, web=true, webtui=true),
-    "life.jl"      => (tui=false, web=true, webtui=false),
-    "rain.jl"      => (tui=false, web=true, webtui=false),
-    "snake.jl"     => (tui=false, web=true, webtui=false),
+    "life.jl"      => (tui=true, web=true, webtui=true),
+    "rain.jl"      => (tui=true, web=true, webtui=true),
+    "snake.jl"     => (tui=true, web=true, webtui=true),
 )
+const DEMO_PATHS = Dict{String, String}()
 
 const DEMO_DESCRIPTIONS = Dict(
     "dashboard.jl" => "Interactive Dashboard\n\nA comprehensive showcase of UI elements including search filtering, reactive lists, and complex flexbox layouts.",
@@ -76,6 +77,14 @@ const DEMO_DESCRIPTIONS = Dict(
     "snake.jl"     => "Snake Game\n\nA fully playable classic Snake game built entirely with UI primitives. (Web Only)"
 )
 
+function register_demo!(name::String, description::String, path::String, compat=nothing)
+    DEMO_DESCRIPTIONS[name] = description
+    DEMO_PATHS[name] = path
+    if compat !== nothing
+        COMPAT_MATRIX[name] = compat
+    end
+end
+
 struct SelectDemo <: Action
     idx::Int
 end
@@ -84,9 +93,13 @@ function ManyUI.execute!(model::HubModel, action::SelectDemo)
     if action.idx > 0 && action.idx <= length(model.demos)
         model.selected = model.demos[action.idx]
         compat = get(COMPAT_MATRIX, model.selected, (tui=true, web=true, webtui=true))
-        # Auto-select web if tui is not supported
+
         if model.mode == "tui" && !compat.tui
-            model.mode = "web"
+            model.mode = compat.web ? "web" : "webtui"
+        elseif model.mode == "web" && !compat.web
+            model.mode = compat.tui ? "tui" : "webtui"
+        elseif model.mode == "webtui" && !compat.webtui
+            model.mode = compat.web ? "web" : "tui"
         end
     end
 end
@@ -96,22 +109,22 @@ function update_hub_ui!(app, model)
     if title !== nothing
         title.text[] = "$(model.selected)"
     end
-    
+
     desc = ManyUI.query_one(app.root, "#demo_desc", Label)
     if desc !== nothing
         desc.text[] = get(DEMO_DESCRIPTIONS, model.selected, "No description available.")
     end
-    
+
     compat = get(COMPAT_MATRIX, model.selected, (tui=true, web=true, webtui=true))
     t_icon = compat.tui ? "✅" : "❌"
     w_icon = compat.web ? "✅" : "❌"
     wt_icon = compat.webtui ? "✅" : "❌"
-    
+
     cl = ManyUI.query_one(app.root, "#compat_label", Label)
     if cl !== nothing
         cl.text[] = "Compatibility:  $t_icon TUI   $w_icon Web Native   $wt_icon WebTerm"
     end
-    
+
     launch_text = if model.mode == "web"
         "🌐 Launch Web Server (opens port 8000)"
     elseif model.mode == "tui"
@@ -119,10 +132,26 @@ function update_hub_ui!(app, model)
     else
         "🖥️ Launch WebTerm (opens port 8000)"
     end
-    
+
     btn = ManyUI.query_one(app.root, "#launch_btn", Button)
     if btn !== nothing
         btn.label[] = "🚀 " * launch_text
+    end
+
+    rg = ManyUI.query_one(app.root, "#backend_mode", RadioGroup)
+    if rg !== nothing
+        disabled_set = Set{Int}()
+        !compat.tui && push!(disabled_set, 1)
+        !compat.web && push!(disabled_set, 2)
+        !compat.webtui && push!(disabled_set, 3)
+        rg.disabled[] = disabled_set
+
+        internal_modes = ["tui", "web", "webtui"]
+        idx_mode = findfirst(==(model.mode), internal_modes)
+        if idx_mode !== nothing
+            rg.selected[] = idx_mode
+            rg.cursor[] = idx_mode
+        end
     end
 end
 
@@ -136,7 +165,7 @@ function ManyUI.render(model::HubModel, ::TUI)
         app = ManyUI.app(w)
         app !== nothing && update_hub_ui!(app, model)
     end, id=:demolist)
-    
+
     # Initialize list selection
     idx = findfirst(==(model.selected), model.demos)
     if idx !== nothing
@@ -146,7 +175,13 @@ function ManyUI.render(model::HubModel, ::TUI)
 
     display_modes = ["TUI", "Web (Native)", "WebTerm"]
     internal_modes = ["tui", "web", "webtui"]
-    
+
+    compat = get(COMPAT_MATRIX, model.selected, (tui=true, web=true, webtui=true))
+    disabled_set = Set{Int}()
+    !compat.tui && push!(disabled_set, 1)
+    !compat.web && push!(disabled_set, 2)
+    !compat.webtui && push!(disabled_set, 3)
+
     rg = RadioGroup(display_modes, (w) -> begin
         idx = w.selected[]
         if idx > 0 && idx <= length(display_modes)
@@ -154,8 +189,8 @@ function ManyUI.render(model::HubModel, ::TUI)
             app = ManyUI.app(w)
             app !== nothing && update_hub_ui!(app, model)
         end
-    end; id=:backend_mode)
-    
+    end; disabled=disabled_set, id=:backend_mode)
+
     idx_mode = findfirst(==(model.mode), internal_modes)
     if idx_mode !== nothing
         rg.selected[] = idx_mode
@@ -166,9 +201,9 @@ function ManyUI.render(model::HubModel, ::TUI)
     t_icon = compat.tui ? "✅" : "❌"
     w_icon = compat.web ? "✅" : "❌"
     wt_icon = compat.webtui ? "✅" : "❌"
-    
+
     compat_text = "Compatibility:  $t_icon TUI   $w_icon Web Native   $wt_icon WebTerm"
-    
+
     launch_text = if model.mode == "web"
         "🌐 Launch Web Server (opens port 8000)"
     elseif model.mode == "tui"
@@ -222,46 +257,105 @@ end
 function run_hub()
     demos_dir = joinpath(pkgdir(@__MODULE__), "demos")
     demo_files = filter(f -> endswith(f, ".jl") && f != "tachikoma_web.jl", readdir(demos_dir))
-    
+
+    for f in demo_files
+        DEMO_PATHS[f] = joinpath(demos_dir, f)
+    end
+
+    all_demos = sort(collect(keys(DEMO_PATHS)))
+
     while true
-        model = HubModel(demo_files, isempty(demo_files) ? "" : demo_files[1], "tui", false, false)
-        
+        model = HubModel(all_demos, isempty(all_demos) ? "" : all_demos[1], "tui", false, false)
+
         println("\nStarting ManyUI Hub...")
         ManyUITUI.launch(model, TUI(); stylesheet=HUB_SHEET)
-        
+
         if model.should_quit || !model.launch_requested
             println("Exiting hub.")
             break
         end
-        
+
         println("\n=======================================================")
         println("Launching: $(model.selected) in $(model.mode) mode")
         println("=======================================================\n")
-        
-        demo_path = joinpath(demos_dir, model.selected)
-        
-        # Run the demo in the SAME process so Revise.jl can hot-reload framework
-        # changes, and to avoid the 7-second Julia JIT startup penalty on every launch.
+
+        demo_path = DEMO_PATHS[model.selected]
+
+        stop_monitor = false
+        main_task = current_task()
+        esc_task = nothing
+        if model.mode in ("web", "webtui")
+            println("🌐 Server should be running at: http://127.0.0.1:8000")
+            println("Press Enter in this console to stop the server and return to Hub.")
+            esc_task = @async begin
+                try
+                    # Wait for the user to press Enter
+                    readline()
+                    if !stop_monitor
+                        # Throw an InterruptException locally to unblock wait(server)
+                        Base.throwto(main_task, InterruptException())
+                    end
+                catch
+                end
+            end
+        end
+
         try
-            # We use a fresh module so redefining structs/functions doesn't warn
-            m = Module(Symbol("Demo_", replace(model.selected, ".jl" => "")))
+            # We use a persistent module per demo so Revise.jl works correctly
+            mod_sym = Symbol("Demo_", replace(model.selected, r"[^a-zA-Z0-9]" => ""))
+            if !isdefined(Main, mod_sym)
+                Core.eval(Main, :(module $mod_sym end))
+            end
+            m = Core.eval(Main, mod_sym)
             Core.eval(m, :(ARGS = [$(model.mode)]))
-            # If Revise is available in the environment, use it to track the demo file
+
             if isdefined(Main, :Revise)
                 Core.eval(Main, :(Revise.includet($m, $demo_path)))
             else
                 Base.include(m, demo_path)
             end
+
+            if isdefined(m, :main)
+                Core.eval(m, :(Base.invokelatest(main)))
+            else
+                println("Error: No main() function found in $(model.selected)")
+            end
         catch e
-            if !(e isa InterruptException)
+            if e isa ManyUIWeb.PortInUseError
+                port = e.port
+                println("\n⚠️  Port $port is already in use!")
+                if Sys.isunix()
+                    try
+                        # lsof -t -i:8000 returns just the PIDs
+                        pids = split(strip(read(`lsof -t -i:$port`, String)))
+                        if !isempty(pids) && !all(isempty, pids)
+                            println("It seems PID(s) $(join(pids, ", ")) are using this port.")
+                            print("Do you want to kill them to free the port? [y/N]: ")
+                            ans = lowercase(strip(readline()))
+                            if ans == "y" || ans == "yes"
+                                for pid in pids
+                                    run(ignorestatus(`kill -9 $pid`))
+                                end
+                                println("✅ Processes killed. You can try launching the demo again.")
+                            end
+                        end
+                    catch
+                        println("Could not automatically determine or kill the process holding the port.")
+                    end
+                end
+            elseif !(e isa InterruptException)
+                println("Hub caught exception: ", typeof(e))
                 Base.showerror(stderr, e, catch_backtrace())
                 println("\n")
             end
             println("Demo exited or was interrupted.")
+        finally
+            stop_monitor = true
         end
-        
-        println("\nPress Enter to return to the Hub...")
-        readline()
+        if model.mode == "tui"
+            println("\nPress Enter to return to the Hub...")
+            readline()
+        end
     end
 end
 

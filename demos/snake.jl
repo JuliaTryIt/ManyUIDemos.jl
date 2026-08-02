@@ -173,21 +173,31 @@ tick!(app) = post!(app, TickEvent(time()))
 
 function main()
     mode = length(ARGS) >= 1 ? ARGS[1] : "web"
-    if mode == "tui" || mode == "webtui"
-        println("⚠️  This specific demo (Snake) uses a custom server-side game loop.")
-        println("Currently, it is only fully supported in 'web' mode.")
-        println("Please select 'Web (Native)' from the Hub for this demo.")
-        println("Press Enter to exit...")
-        readline()
+    if mode == "tui"
+        app = ManyUITUI.launch(snake_app; stylesheet = SHEET, wait = false)
+        try
+            while app.running
+                sleep(0.12)
+                r = app.root
+                r isa Snake || continue
+                step!(r)
+                tick!(app)
+            end
+        catch e
+            e isa InterruptException || rethrow()
+        finally
+            ManyUITUI.stop!(app.driver)
+            println("stopped")
+        end
     else
         port = 8000
-        server = serve(snake_app; port = port, stylesheet = SHEET, title = "Snake")
+        server = ManyUITUI.launch(snake_app, ManyUI.WebNative(); port = 8000)
         println("Snake running at ", ManyUIWeb.url(server))
         println("Ctrl-C to stop.")
         try
             while true
                 sleep(0.12)
-                for s in sessions_of(server)
+                for s in values(server.sessions)
                     r = s.app.root
                     r isa Snake || continue
                     step!(r)

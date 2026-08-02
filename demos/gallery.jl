@@ -93,19 +93,13 @@ function main()
     if mode == "tui"
         ManyUITUI.launch(gallery_app; stylesheet = SHEET)
     elseif mode == "webtui"
-        ManyUITUI.launch(gallery_app; backend = WebBackend(port = 8000), stylesheet = SHEET)
-    else
-        server = serve(gallery_app; port = 8000, stylesheet = SHEET, title = "Gallery")
-        println("Gallery running at ", ManyUIWeb.url(server))
+        server = serve(gallery_app; port = 8000, stylesheet = SHEET, title = "Gallery WebTUI")
+        println("Gallery WebTUI running at ", ManyUIWeb.url(server))
         println("Ctrl-C to stop.")
-        try
-            wait(server)
-        catch e
-            e isa InterruptException || rethrow()
-        finally
-            ManyUITUI.stop!(server)
-            println("stopped")
-        end
+    else
+        server = ManyUITUI.launch(gallery_app, ManyUI.WebNative(); port = 8000)
+        println("Gallery WebNative running on http://127.0.0.1:8000")
+        println("Ctrl-C to stop.")
     end
 end
 

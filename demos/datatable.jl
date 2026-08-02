@@ -71,7 +71,7 @@ function main()
     elseif mode == "webtui"
         ManyUITUI.launch(table_app; backend = WebBackend(port = 8000), stylesheet = SHEET)
     else
-        server = serve(table_app; port = 8000, stylesheet = SHEET, title = "Table")
+        server = ManyUITUI.launch(table_app, ManyUI.WebNative(); port = 8000)
         println("Table running at ", ManyUIWeb.url(server))
         println("Ctrl-C to stop.")
         try

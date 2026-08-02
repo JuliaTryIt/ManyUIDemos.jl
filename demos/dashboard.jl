@@ -39,8 +39,27 @@ const SHEET = parse_css("""
     #filter { border: round #475569; height: 1; shrink: 0; }
     #hits   { color: #94a3b8; shrink: 0; }
     #langs  { grow: 1; }
+    #footer { color: #94a3b8; shrink: 0; align: center; }
     List    { color: #e2e8f0; }
 """)
+
+struct DashboardScreen <: Widget
+    node::WidgetNode
+    content::Widget
+end
+
+ManyUI.node(w::DashboardScreen) = w.node
+ManyUI.children(w::DashboardScreen) = (w.content,)
+
+function ManyUI.on_event!(w::DashboardScreen, d::Dispatch{KeyEvent})
+    e = d.event
+    if e.code === Key.ESCAPE || (e.code === Key.CHAR && e.char == 'q') || (e.code === Key.CHAR && e.char == 'c' && e.ctrl)
+        a = ManyUI.app(w)
+        a === nothing || quit!(a)
+        consume!(d)
+    end
+    return nothing
+end
 
 """
 The screen. Called once per client, so each browser tab filters its own
@@ -50,28 +69,36 @@ function dashboard_app()
     list = List(copy(LANGUAGES); id = :langs)
     hits = Label("$(length(LANGUAGES)) of $(length(LANGUAGES))"; id = :hits)
 
-    # `on_submit` fires on ENTER. Filtering is just: recompute the
-    # items, hand them over, and let the framework work out what moved.
-    filter_box = TextInput("", w -> begin
-                               q = lowercase(w.text[])
-                               keep = isempty(q) ? copy(LANGUAGES) :
-                                   filter(l -> occursin(q, lowercase(l)),
-                                          LANGUAGES)
-                               set_items!(list, keep)
-                               hits.text[] =
-                                   "$(length(keep)) of $(length(LANGUAGES))"
-                               nothing
-                           end;
-                           placeholder = "type to filter, enter to apply",
+    filter_fn = w -> begin
+        q = lowercase(w.text[])
+        keep = isempty(q) ? copy(LANGUAGES) :
+            filter(l -> occursin(q, lowercase(l)),
+                   LANGUAGES)
+        set_items!(list, keep)
+        hits.text[] = "$(length(keep)) of $(length(LANGUAGES))"
+        nothing
+    end
+
+    # `on_change` fires on every edit/keystroke.
+    filter_box = TextInput("", _ -> nothing;
+                           on_change = filter_fn,
+                           placeholder = "type to filter...",
                            id = :filter)
 
-    return Container(
+    content = Container(
         Label("languages"; id = :title),
         filter_box,
         hits,
-        list;
+        list,
+        Label("Esc or Ctrl-C to quit"; id = :footer);
         id = :screen,
     )
+
+    n = WidgetNode(; type_name=:DashboardScreen, focusable=true)
+    push!(n.children, content)
+    w = DashboardScreen(n, content)
+    ManyUI.node(content).parent = w
+    return w
 end
 
 function main()
@@ -81,7 +108,7 @@ function main()
     elseif mode == "webtui"
         ManyUITUI.launch(dashboard_app; backend = WebBackend(port = 8000), stylesheet = SHEET)
     else
-        server = serve(dashboard_app; port = 8000, stylesheet = SHEET, title = "Dashboard")
+        server = ManyUITUI.launch(dashboard_app, ManyUI.WebNative(); port = 8000)
         println("Dashboard running at ", ManyUIWeb.url(server))
         println("Ctrl-C to stop.")
         try
