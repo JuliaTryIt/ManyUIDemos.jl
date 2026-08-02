@@ -131,7 +131,11 @@ function ManyUI.render(model::HubModel, ::TUI)
         ManyUI.execute!(model, SelectDemo(w.sel.cursor))
         app = ManyUI.app(w)
         app !== nothing && update_hub_ui!(app, model)
-    end; id=:demolist)
+    end; on_change = (w) -> begin
+        ManyUI.execute!(model, SelectDemo(w.sel.cursor))
+        app = ManyUI.app(w)
+        app !== nothing && update_hub_ui!(app, model)
+    end, id=:demolist)
     
     # Initialize list selection
     idx = findfirst(==(model.selected), model.demos)
