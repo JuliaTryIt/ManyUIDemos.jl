@@ -240,11 +240,23 @@ function run_hub()
         
         demo_path = joinpath(demos_dir, model.selected)
         
-        # Run the demo as a subprocess so it gets a clean environment and terminal state
+        # Run the demo in the SAME process so Revise.jl can hot-reload framework
+        # changes, and to avoid the 7-second Julia JIT startup penalty on every launch.
         try
-            cmd = `$(Base.julia_cmd()) --project=$(pkgdir(@__MODULE__)) $demo_path $(model.mode)`
-            run(cmd)
+            # We use a fresh module so redefining structs/functions doesn't warn
+            m = Module(Symbol("Demo_", replace(model.selected, ".jl" => "")))
+            Core.eval(m, :(ARGS = [$(model.mode)]))
+            # If Revise is available in the environment, use it to track the demo file
+            if isdefined(Main, :Revise)
+                Core.eval(Main, :(Revise.includet($m, $demo_path)))
+            else
+                Base.include(m, demo_path)
+            end
         catch e
+            if !(e isa InterruptException)
+                Base.showerror(stderr, e, catch_backtrace())
+                println("\n")
+            end
             println("Demo exited or was interrupted.")
         end
         
