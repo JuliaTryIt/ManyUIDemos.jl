@@ -43,6 +43,7 @@ const HUB_SHEET = parse_css("""
     
     #right_panel { layout: column; gap: 1; grow: 1; border: round #475569; padding: 1; }
     #demo_title { color: #bae6fd; shrink: 0; }
+    #demo_desc { color: #f1f5f9; grow: 1; }
     #compat_label { color: #94a3b8; shrink: 0; }
     #backend_panel { layout: column; gap: 1; shrink: 0; }
     #backend_label { color: #cbd5e1; }
@@ -64,6 +65,17 @@ const COMPAT_MATRIX = Dict(
     "snake.jl"     => (tui=false, web=true, webtui=false),
 )
 
+const DEMO_DESCRIPTIONS = Dict(
+    "dashboard.jl" => "Interactive Dashboard\n\nA comprehensive showcase of UI elements including search filtering, reactive lists, and complex flexbox layouts.",
+    "datatable.jl" => "High-Performance Grid\n\nA spreadsheet-like data table widget. Features keyboard navigation, row selection, and smooth scrolling over large datasets.",
+    "gallery.jl"   => "Widget Gallery\n\nA tour of all standard ManyUI components: buttons, text inputs, radio groups, checkboxes, and layout primitives.",
+    "scrollpane.jl"=> "Nested Scrolling\n\nTests the limits of the clipping engine with deeply nested scrollable areas and dynamic content injection (like a live log tailer).",
+    "unicode.jl"   => "Unicode & Wide Chars\n\nValidates the ANSI encoder's ability to render complex emojis, CJK wide characters, and zero-width joiners accurately.",
+    "life.jl"      => "Conway's Game of Life\n\nAn animated simulation of cellular automata. (Web Only)",
+    "rain.jl"      => "Digital Rain\n\nA Matrix-inspired falling text animation using dynamic colors. (Web Only)",
+    "snake.jl"     => "Snake Game\n\nA fully playable classic Snake game built entirely with UI primitives. (Web Only)"
+)
+
 struct SelectDemo <: Action
     idx::Int
 end
@@ -83,6 +95,11 @@ function update_hub_ui!(app, model)
     title = ManyUI.query_one(app.root, "#demo_title", Label)
     if title !== nothing
         title.text[] = "$(model.selected)"
+    end
+    
+    desc = ManyUI.query_one(app.root, "#demo_desc", Label)
+    if desc !== nothing
+        desc.text[] = get(DEMO_DESCRIPTIONS, model.selected, "No description available.")
     end
     
     compat = get(COMPAT_MATRIX, model.selected, (tui=true, web=true, webtui=true))
@@ -158,6 +175,7 @@ function ManyUI.render(model::HubModel, ::TUI)
 
     right_panel = Container(
         Label("$(model.selected)"; id=:demo_title),
+        Label(get(DEMO_DESCRIPTIONS, model.selected, "No description available."); id=:demo_desc),
         Label(compat_text; id=:compat_label),
         Label(""),
         Container(
