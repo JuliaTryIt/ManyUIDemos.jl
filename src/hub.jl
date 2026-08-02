@@ -79,9 +79,41 @@ function ManyUI.execute!(model::HubModel, action::SelectDemo)
     end
 end
 
+function update_hub_ui!(app, model)
+    title = ManyUI.query_one(app.root, "#demo_title", Label)
+    if title !== nothing
+        title.text[] = "$(model.selected)"
+    end
+    
+    compat = get(COMPAT_MATRIX, model.selected, (tui=true, web=true, webtui=true))
+    t_icon = compat.tui ? "✅" : "❌"
+    w_icon = compat.web ? "✅" : "❌"
+    wt_icon = compat.webtui ? "✅" : "❌"
+    
+    cl = ManyUI.query_one(app.root, "#compat_label", Label)
+    if cl !== nothing
+        cl.text[] = "Compatibility:  $t_icon TUI   $w_icon Web Native   $wt_icon WebTerm"
+    end
+    
+    launch_text = if model.mode == "web"
+        "🌐 Launch Web Server (opens port 8000)"
+    elseif model.mode == "tui"
+        "📺 Launch in Terminal"
+    else
+        "🖥️ Launch WebTerm (opens port 8000)"
+    end
+    
+    btn = ManyUI.query_one(app.root, "#launch_btn", Button)
+    if btn !== nothing
+        btn.label[] = "🚀 " * launch_text
+    end
+end
+
 function ManyUI.render(model::HubModel, ::TUI)
     lst = List(model.demos, (w) -> begin
         ManyUI.execute!(model, SelectDemo(w.sel.cursor))
+        app = ManyUI.app(w)
+        app !== nothing && update_hub_ui!(app, model)
     end; id=:demolist)
     
     # Initialize list selection
@@ -98,6 +130,8 @@ function ManyUI.render(model::HubModel, ::TUI)
         idx = w.selected[]
         if idx > 0 && idx <= length(display_modes)
             ManyUI.execute!(model, SetMode(internal_modes[idx]))
+            app = ManyUI.app(w)
+            app !== nothing && update_hub_ui!(app, model)
         end
     end; id=:backend_mode)
     
@@ -137,7 +171,7 @@ function ManyUI.render(model::HubModel, ::TUI)
                 ManyUI.execute!(model, LaunchDemo(model.selected))
                 app = ManyUI.app(btn)
                 app !== nothing && ManyUITUI.quit!(app)
-            end; classes=[:primary_btn]),
+            end; classes=[:primary_btn], id=:launch_btn),
             id=:btn_panel
         );
         id=:right_panel
