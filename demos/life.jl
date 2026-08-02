@@ -122,7 +122,7 @@ tick!(app) = post!(app, TickEvent(time()))
 function main()
     mode = length(ARGS) >= 1 ? ARGS[1] : "web"
     if mode == "tui" || mode == "webtui"
-        println("⚠️  This specific demo ($title) uses a custom server-side game loop.")
+        println("⚠️  This specific demo (Life) uses a custom server-side game loop.")
         println("Currently, it is only fully supported in 'web' mode.")
         println("Please select 'Web (Native)' from the Hub for this demo.")
         println("Press Enter to exit...")
@@ -137,9 +137,9 @@ function main()
                 sleep(0.05)
                 for s in sessions_of(server)
                     r = s.app.root
-                    r isa Life || continue
+                    r isa LifeBoard || continue
                     step!(r)
-                tick!(s.app)
+                    tick!(s.app)
                 end
             end
         catch e
