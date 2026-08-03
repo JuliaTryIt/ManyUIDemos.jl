@@ -14,6 +14,7 @@
 
 using ManyUI, ManyUITUI
 using ManyUIWeb
+import ManyUICImGui
 
 const ELEMENTS = [
     ("Hydrogen", "H", 1, 1.008), ("Helium", "He", 2, 4.003),
@@ -72,7 +73,6 @@ function main()
     elseif mode == "webtui"
         ManyUITUI.launch(table_app; backend = WebBackend(port = port), stylesheet = SHEET)
     elseif mode == "cimgui"
-        import ManyUICImGui
         ManyUITUI.launch(table_app; backend = ManyUICImGui.ImGuiBackend(), stylesheet = SHEET)
     else
         server = ManyUITUI.launch(table_app, ManyUI.WebNative(); port = port)

@@ -18,6 +18,7 @@
 
 using ManyUI, ManyUITUI
 using ManyUIWeb
+import ManyUICImGui
 
 """
 Each case: the text, what it is, and what should be true of it.
@@ -100,7 +101,6 @@ function main()
     elseif mode == "webtui"
         ManyUITUI.launch(unicode_app; backend = WebBackend(port = port), stylesheet = SHEET)
     elseif mode == "cimgui"
-        import ManyUICImGui
         ManyUITUI.launch(unicode_app; backend = ManyUICImGui.ImGuiBackend(), stylesheet = SHEET)
     else
         server = ManyUITUI.launch(unicode_app, ManyUI.WebNative(); port = port)

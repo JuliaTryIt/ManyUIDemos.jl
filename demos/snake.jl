@@ -12,6 +12,7 @@
 
 using ManyUI, ManyUITUI
 using ManyUIWeb
+import ManyUICImGui
 
 const HEAD = Style(; fg = rgb(0xbb, 0xf7, 0xd0), bold = true)
 const BODY = Style(; fg = rgb(0x22, 0xc5, 0x5e))

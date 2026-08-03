@@ -11,6 +11,7 @@
 
 using ManyUI, ManyUITUI
 using ManyUIWeb
+import ManyUICImGui
 
 const SHEET = parse_css("""
     #screen  { layout: column; padding: 1; }
@@ -131,7 +132,6 @@ function main()
             ManyUIWeb.stop!(server)
         end
     elseif mode == "cimgui"
-        import ManyUICImGui
         app = ManyUITUI.launch(gallery_app, ManyUICImGui.ImGuiBackend(); stylesheet = SHEET, wait = false)
         try
             while app.running

@@ -11,6 +11,7 @@
 
 using ManyUI, ManyUITUI
 using ManyUIWeb
+import ManyUICImGui
 
 """
 A Game of Life board. The grid is DATA, not a widget per cell: a

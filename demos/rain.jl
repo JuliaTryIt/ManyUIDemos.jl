@@ -11,6 +11,7 @@
 
 using ManyUI, ManyUITUI
 using ManyUIWeb
+import ManyUICImGui
 
 # Halfwidth katakana: one cell each, unlike their fullwidth cousins.
 const GLYPHS = vcat(collect('ｦ':'ﾝ'), collect('A':'Z'),
