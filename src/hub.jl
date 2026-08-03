@@ -113,22 +113,35 @@ function ManyUI.execute!(model::HubModel, action::SelectDemo)
     end
 end
 
+import ManyUICImGui
+
 function backend_capabilities_table(mode::String)
     mode_name = Dict("tui" => "TUI", "web" => "Web Native", "webtui" => "WebTerm", "cimgui" => "CImGui")[mode]
     
-    lines = ["Capabilities for $mode_name:",
-             "┌───────────────────┬─────────────┐",
-             "│ Demo              │ Supported?  │",
-             "├───────────────────┼─────────────┤"]
-    
-    for demo in sort(collect(keys(DEMO_PATHS)))
-        compat = get(COMPAT_MATRIX, demo, (tui=true, web=true, webtui=true, cimgui=true))
-        is_supported = getproperty(compat, Symbol(mode))
-        icon = is_supported ? "✅" : "❌"
-        padded_demo = rpad(demo, 17)
-        push!(lines, "│ $padded_demo │      $icon      │")
+    b = if mode == "tui"
+        ManyUITUI.TerminalBackend()
+    elseif mode == "web"
+        ManyUI.WebNative()
+    elseif mode == "webtui"
+        ManyUIWeb.WebBackend()
+    elseif mode == "cimgui"
+        ManyUICImGui.ImGuiBackend()
     end
-    push!(lines, "└───────────────────┴─────────────┘")
+    
+    caps = ManyUI.backend_capabilities(b)
+    
+    lines = ["Capabilities for $mode_name:",
+             "┌────────────────┬────────────┐",
+             "│ Capability     │ Supported? │",
+             "├────────────────┼────────────┤"]
+    
+    for k in keys(caps)
+        val = getproperty(caps, k)
+        icon = val ? "✅" : "❌"
+        padded_k = rpad(String(k), 14)
+        push!(lines, "│ $padded_k │     $icon     │")
+    end
+    push!(lines, "└────────────────┴────────────┘")
     return join(lines, "\n")
 end
 
@@ -165,6 +178,7 @@ function update_hub_ui!(app, model)
 
     rg = ManyUI.query_one(app.root, "#backend_mode", RadioGroup)
     if rg !== nothing
+        compat = get(COMPAT_MATRIX, model.selected, (tui=true, web=true, webtui=true, cimgui=true))
         disabled_set = Set{Int}()
         !compat.tui && push!(disabled_set, 1)
         !compat.web && push!(disabled_set, 2)
