@@ -1,6 +1,7 @@
 using TachikomaDemos
 import ManyUIWeb
 import Tachikoma
+import DefaultApplication
 
 # ── Web UX overrides for TachikomaDemos ──
 # We wrap the model instead of redefining methods globally,
@@ -58,6 +59,7 @@ function Tachikoma.view(m::WebLauncherModel, f::Tachikoma.Frame)
 end
 function main()
     mode = length(ARGS) >= 1 ? ARGS[1] : "tui"
+    port = length(ARGS) >= 2 ? parse(Int, ARGS[2]) : 8000
     if mode == "tui"
         TachikomaDemos.launcher()
     elseif mode == "webtui"
@@ -121,7 +123,16 @@ function main()
                     end
                 end
             end
-        end; port=8000, title="Tachikoma Demos")
+        end; port=port, title="Tachikoma Demos")
+        if get(ENV, "MANYUI_NO_BROWSER", "") != "1"
+            url = "http://127.0.0.1:$(port)/"
+            try
+                DefaultApplication.open(url)
+                println("🌍 Opening browser at $(url)")
+            catch e
+                @warn "Could not open the default browser" url exception=(e, catch_backtrace())
+            end
+        end
         wait(server)
     end
 end
