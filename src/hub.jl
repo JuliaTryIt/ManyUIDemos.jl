@@ -365,7 +365,7 @@ function run_hub(port::Int=8000)
             finally
                 stop_monitor = true
             end
-            if !retry_launch && model.mode == "tui"
+            if !retry_launch
                 println("\nPress Enter to return to the Hub...")
                 readline()
             end
