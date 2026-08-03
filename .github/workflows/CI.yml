@@ -72,6 +72,10 @@ jobs:
           push!(deps, PackageSpec(url="https://github.com/s-celles/ManyUICLI.jl"))
           push!(deps, PackageSpec(url="https://github.com/s-celles/ManyUIWeb.jl"))
           push!(deps, PackageSpec(url="https://github.com/s-celles/Tachikoma.jl"))
+          push!(deps, PackageSpec(
+            url="https://github.com/s-celles/Tachikoma.jl",
+            subdir="demos/TachikomaDemos",
+          ))
           Pkg.develop(deps)
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
