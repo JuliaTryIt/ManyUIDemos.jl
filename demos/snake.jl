@@ -173,6 +173,7 @@ tick!(app) = post!(app, TickEvent(time()))
 
 function main()
     mode = length(ARGS) >= 1 ? ARGS[1] : "web"
+    port = length(ARGS) >= 2 ? parse(Int, ARGS[2]) : 8000
     if mode == "tui"
         app = ManyUITUI.launch(snake_app; stylesheet = SHEET, wait = false)
         try
@@ -190,8 +191,8 @@ function main()
             println("stopped")
         end
     else
-        port = 8000
-        server = ManyUITUI.launch(snake_app, ManyUI.WebNative(); port = 8000)
+        port = port
+        server = ManyUITUI.launch(snake_app, ManyUI.WebNative(); port = port)
         println("Snake running at ", ManyUIWeb.url(server))
         println("Ctrl-C to stop.")
         try

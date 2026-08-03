@@ -23,6 +23,7 @@ const SHEET = parse_css("""
     #inputs  { border: round #475569; width: 1fr; }
     #listbox { border: round #475569; width: 1fr; }
     #tablebox{ border: round #475569; width: 2fr; }
+    #controls{ border: round #475569; width: 1fr; }
 
     Label    { color: #e2e8f0; }
     Static   { color: #cbd5e1; }
@@ -60,6 +61,12 @@ function gallery_app()
                       end; placeholder = "type, then enter", id = :input)
 
     area = TextArea("multi-line\nTextArea\n漢字 and 👨‍👩‍👧‍👦"; id = :area)
+    
+    spin = Spinner()
+    slider = Slider(0.5, w -> begin
+                         status.text[] = "Slider value: $(round(w.value[], digits=2))"
+                         nothing
+                     end; min=0.0, max=1.0, step=0.1)
 
     lst = List(["alpha", "beta", "gamma", "delta", "epsilon", "zeta"];
                id = :list)
@@ -76,12 +83,13 @@ function gallery_app()
     )
 
     inputs = Container(input, area; id = :inputs)
+    controls = Container(Label("Loading..."), spin, Label("Slider"), slider; id = :controls)
     listbox = Container(lst; id = :listbox)
     tablebox = Container(tbl; id = :tablebox)
 
     return Container(
         Label("ManyUI widget gallery  --  tab to move focus"; id = :title),
-        Container(texts, inputs; id = :row1),
+        Container(texts, inputs, controls; id = :row1),
         Container(listbox, tablebox; id = :row2),
         status;
         id = :screen,
@@ -90,16 +98,43 @@ end
 
 function main()
     mode = length(ARGS) >= 1 ? ARGS[1] : "web"
+    port = length(ARGS) >= 2 ? parse(Int, ARGS[2]) : 8000
     if mode == "tui"
-        ManyUITUI.launch(gallery_app; stylesheet = SHEET)
+        app = ManyUITUI.launch(gallery_app; stylesheet = SHEET, wait = false)
+        try
+            while app.running
+                sleep(0.1)
+                ManyUI.post!(app, ManyUI.TickEvent(time()))
+            end
+        catch e
+            e isa InterruptException || rethrow()
+        finally
+            ManyUITUI.stop!(app.driver)
+        end
+        if app.error !== nothing
+            throw(app.error)
+        end
     elseif mode == "webtui"
-        server = serve(gallery_app; port = 8000, stylesheet = SHEET, title = "Gallery WebTUI")
+        server = serve(gallery_app; port = port, stylesheet = SHEET, title = "Gallery WebTUI")
         println("Gallery WebTUI running at ", ManyUIWeb.url(server))
         println("Ctrl-C to stop.")
     else
-        server = ManyUITUI.launch(gallery_app, ManyUI.WebNative(); port = 8000)
-        println("Gallery WebNative running on http://127.0.0.1:8000")
+        server = ManyUITUI.launch(gallery_app, ManyUI.WebNative(); port = port)
+        println("Gallery WebNative running on http://127.0.0.1:$(port)")
         println("Ctrl-C to stop.")
+        try
+            while true
+                sleep(0.1)
+                for s in values(server.sessions)
+                    ManyUI.post!(s.app, ManyUI.TickEvent(time()))
+                end
+                ManyUI.post!(server, ManyUI.TickEvent(time()))
+            end
+        catch e
+            e isa InterruptException || rethrow()
+        finally
+            ManyUITUI.stop!(server)
+        end
     end
 end
 

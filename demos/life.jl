@@ -2,7 +2,7 @@
 #
 #     julia --project=ManyUIWeb ManyUIWeb/examples/life.jl
 #
-# then open http://127.0.0.1:8000/. Every browser tab gets its OWN
+# then open http://127.0.0.1:$(port)/. Every browser tab gets its OWN
 # board: the factory below runs once per client.
 #
 # The same widget runs on a terminal with
@@ -121,6 +121,7 @@ tick!(app) = post!(app, TickEvent(time()))
 
 function main()
     mode = length(ARGS) >= 1 ? ARGS[1] : "web"
+    port = length(ARGS) >= 2 ? parse(Int, ARGS[2]) : 8000
     if mode == "tui"
         app = ManyUITUI.launch(life_app; stylesheet = SHEET, wait = false)
         try
@@ -138,8 +139,8 @@ function main()
             println("stopped")
         end
     else
-        port = 8000
-        server = ManyUITUI.launch(life_app, ManyUI.WebNative(); port = 8000)
+        port = port
+        server = ManyUITUI.launch(life_app, ManyUI.WebNative(); port = port)
         println("Life running at ", ManyUIWeb.url(server))
         println("Ctrl-C to stop.")
         try
@@ -151,6 +152,7 @@ function main()
                     step!(r)
                     tick!(s.app)
                 end
+                ManyUI.post!(server, ManyUI.TickEvent(time()))
             end
         catch e
             e isa InterruptException || rethrow()

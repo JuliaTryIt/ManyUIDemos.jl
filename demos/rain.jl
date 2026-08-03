@@ -137,6 +137,7 @@ tick!(app) = post!(app, TickEvent(time()))
 
 function main()
     mode = length(ARGS) >= 1 ? ARGS[1] : "web"
+    port = length(ARGS) >= 2 ? parse(Int, ARGS[2]) : 8000
     if mode == "tui"
         app = ManyUITUI.launch(rain_app; stylesheet = SHEET, wait = false)
         try
@@ -155,8 +156,8 @@ function main()
             println("stopped")
         end
     else
-        port = 8000
-        server = ManyUITUI.launch(rain_app, ManyUI.WebNative(); port = 8000)
+        port = port
+        server = ManyUITUI.launch(rain_app, ManyUI.WebNative(); port = port)
         println("Rain running at ", ManyUIWeb.url(server))
         println("Ctrl-C to stop.")
         try
@@ -169,6 +170,7 @@ function main()
                     step!(r)
                     tick!(s.app)
                 end
+                ManyUI.post!(server, ManyUI.TickEvent(time()))
             end
         catch e
             e isa InterruptException || rethrow()

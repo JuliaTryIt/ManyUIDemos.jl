@@ -2,7 +2,7 @@
 #
 #     julia --project=ManyUIWeb ManyUIWeb/examples/datatable.jl
 #
-# then open http://127.0.0.1:8000/.
+# then open http://127.0.0.1:$(port)/.
 #
 #   up/down, pageup/pagedown, home/end   move the cursor
 #   the wheel                            scrolls
@@ -66,12 +66,13 @@ end
 
 function main()
     mode = length(ARGS) >= 1 ? ARGS[1] : "web"
+    port = length(ARGS) >= 2 ? parse(Int, ARGS[2]) : 8000
     if mode == "tui"
         ManyUITUI.launch(table_app; stylesheet = SHEET)
     elseif mode == "webtui"
-        ManyUITUI.launch(table_app; backend = WebBackend(port = 8000), stylesheet = SHEET)
+        ManyUITUI.launch(table_app; backend = WebBackend(port = port), stylesheet = SHEET)
     else
-        server = ManyUITUI.launch(table_app, ManyUI.WebNative(); port = 8000)
+        server = ManyUITUI.launch(table_app, ManyUI.WebNative(); port = port)
         println("Table running at ", ManyUIWeb.url(server))
         println("Ctrl-C to stop.")
         try

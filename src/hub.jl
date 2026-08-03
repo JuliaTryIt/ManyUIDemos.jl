@@ -14,6 +14,7 @@ mutable struct HubModel
     mode::String
     should_quit::Bool
     launch_requested::Bool
+    port::Int
 end
 
 function ManyUI.execute!(model::HubModel, action::LaunchDemo)
@@ -205,11 +206,11 @@ function ManyUI.render(model::HubModel, ::TUI)
     compat_text = "Compatibility:  $t_icon TUI   $w_icon Web Native   $wt_icon WebTerm"
 
     launch_text = if model.mode == "web"
-        "🌐 Launch Web Server (opens port 8000)"
+        "🌐 Launch Web Server (opens port $(model.port))"
     elseif model.mode == "tui"
         "📺 Launch in Terminal"
     else
-        "🖥️ Launch WebTerm (opens port 8000)"
+        "🖥️ Launch WebTerm (opens port $(model.port))"
     end
 
     right_panel = Container(
@@ -254,7 +255,7 @@ function ManyUI.render(model::HubModel, ::TUI)
     )
 end
 
-function run_hub()
+function run_hub(port::Int=8000)
     demos_dir = joinpath(pkgdir(@__MODULE__), "demos")
     demo_files = filter(f -> endswith(f, ".jl") && f != "tachikoma_web.jl", readdir(demos_dir))
 
@@ -265,7 +266,7 @@ function run_hub()
     all_demos = sort(collect(keys(DEMO_PATHS)))
 
     while true
-        model = HubModel(all_demos, isempty(all_demos) ? "" : all_demos[1], "tui", false, false)
+        model = HubModel(all_demos, isempty(all_demos) ? "" : all_demos[1], "tui", false, false, port)
 
         println("\nStarting ManyUI Hub...")
         ManyUITUI.launch(model, TUI(); stylesheet=HUB_SHEET)
@@ -285,7 +286,7 @@ function run_hub()
         main_task = current_task()
         esc_task = nothing
         if model.mode in ("web", "webtui")
-            println("🌐 Server should be running at: http://127.0.0.1:8000")
+            println("🌐 Server should be running at: http://127.0.0.1:$(model.port)")
             println("Press Enter in this console to stop the server and return to Hub.")
             esc_task = @async begin
                 try
@@ -307,7 +308,7 @@ function run_hub()
                 Core.eval(Main, :(module $mod_sym end))
             end
             m = Core.eval(Main, mod_sym)
-            Core.eval(m, :(ARGS = [$(model.mode)]))
+            Core.eval(m, :(ARGS = [$(model.mode), string($(model.port))]))
 
             if isdefined(Main, :Revise)
                 Core.eval(Main, :(Revise.includet($m, $demo_path)))
@@ -321,13 +322,14 @@ function run_hub()
                 println("Error: No main() function found in $(model.selected)")
             end
         catch e
-            if e isa ManyUIWeb.PortInUseError
-                port = e.port
-                println("\n⚠️  Port $port is already in use!")
+            err = e isa LoadError ? e.error : e
+            if err isa ManyUIWeb.PortInUseError || (err isa Base.IOError && err.code == Base.UV_EADDRINUSE)
+                port_in_use = err isa ManyUIWeb.PortInUseError ? err.port : model.port
+                println("\n⚠️  Port $port_in_use is already in use!")
                 if Sys.isunix()
                     try
-                        # lsof -t -i:8000 returns just the PIDs
-                        pids = split(strip(read(`lsof -t -i:$port`, String)))
+                        # lsof -t -i:<port> returns just the PIDs
+                        pids = split(strip(read(`lsof -t -i:$port_in_use`, String)))
                         if !isempty(pids) && !all(isempty, pids)
                             println("It seems PID(s) $(join(pids, ", ")) are using this port.")
                             print("Do you want to kill them to free the port? [y/N]: ")
@@ -343,10 +345,11 @@ function run_hub()
                         println("Could not automatically determine or kill the process holding the port.")
                     end
                 end
-            elseif !(e isa InterruptException)
-                println("Hub caught exception: ", typeof(e))
+            elseif !(err isa InterruptException)
+                println(stderr, "\n❌ DEMO CRASHED:")
+                println(stderr, "Hub caught exception: ", typeof(err))
                 Base.showerror(stderr, e, catch_backtrace())
-                println("\n")
+                println(stderr, "\n")
             end
             println("Demo exited or was interrupted.")
         finally

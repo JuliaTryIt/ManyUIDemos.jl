@@ -16,9 +16,12 @@ end
 
 """
 Run the central demo hub to interactively select and launch demos.
+
+# Options
+- `-p, --port <port>`: The port to use for Web/WebTUI modes (default: 8000).
 """
-@cast function hub()
-    HubApp.run_hub()
+@cast function hub(; port::Int=8000)
+    HubApp.run_hub(port)
 end
 
 """
@@ -26,9 +29,12 @@ Run the main demo application.
 
 # Args
 - `mode`: The mode to run the application in (either "tui" or "web").
+
+# Options
+- `-p, --port <port>`: The port to use for Web/WebTUI modes (default: 8000).
 """
-@cast function showapp(mode::String="tui")
-    DemoApp.run_demo(mode)
+@cast function showapp(mode::String="tui"; port::Int=8000)
+    DemoApp.run_demo(mode, port)
 end
 
 """

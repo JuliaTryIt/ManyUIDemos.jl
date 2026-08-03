@@ -94,12 +94,13 @@ end
 
 function main()
     mode = length(ARGS) >= 1 ? ARGS[1] : "web"
+    port = length(ARGS) >= 2 ? parse(Int, ARGS[2]) : 8000
     if mode == "tui"
         ManyUITUI.launch(unicode_app; stylesheet = SHEET)
     elseif mode == "webtui"
-        ManyUITUI.launch(unicode_app; backend = WebBackend(port = 8000), stylesheet = SHEET)
+        ManyUITUI.launch(unicode_app; backend = WebBackend(port = port), stylesheet = SHEET)
     else
-        server = ManyUITUI.launch(unicode_app, ManyUI.WebNative(); port = 8000)
+        server = ManyUITUI.launch(unicode_app, ManyUI.WebNative(); port = port)
         println("Unicode running at ", ManyUIWeb.url(server))
         println("Ctrl-C to stop.")
         try

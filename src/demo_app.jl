@@ -76,16 +76,16 @@ end
 
 const global_model = MyModel("data.csv", true, ["App started"])
 
-function run_demo(mode::String="tui")
+function run_demo(mode::String="tui", port::Int=8000)
     if mode == "tui"
         println("Launching in TUI mode (Press Ctrl-C or click Quit to exit)...")
         ManyUITUI.launch(global_model, TUI())
     elseif mode == "webtui"
-        println("Launching in WebTerminal mode at http://localhost:8000 ...")
-        ManyUITUI.launch(global_model, WebTerminal(); port=8000)
+        println("Launching in WebTerminal mode at http://localhost:$port ...")
+        ManyUITUI.launch(global_model, WebTerminal(); port=port)
     elseif mode == "web"
-        println("Launching in WebNative mode at http://localhost:8080 ...")
-        ManyUITUI.launch(global_model, WebNative(); port=8080)
+        println("Launching in WebNative mode at http://localhost:$port ...")
+        ManyUITUI.launch(global_model, WebNative(); port=port)
     else
         println("Unknown mode: $mode")
     end
