@@ -131,7 +131,7 @@ function main()
             ManyUIWeb.stop!(server)
         end
     else
-        server = ManyUITUI.launch(gallery_app, ManyUI.WebNative(); port = port)
+        server = ManyUITUI.launch(gallery_app, ManyUI.WebNative(); port = port, wait = false)
         println("Gallery WebNative running on http://127.0.0.1:$(port)")
         println("Ctrl-C to stop.")
         try

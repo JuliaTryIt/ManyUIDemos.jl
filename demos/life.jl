@@ -140,7 +140,7 @@ function main()
         end
     else
         port = port
-        server = ManyUITUI.launch(life_app, ManyUI.WebNative(); port = port)
+        server = ManyUITUI.launch(life_app, ManyUI.WebNative(); port = port, wait = false)
         println("Life running at ", ManyUIWeb.url(server))
         println("Ctrl-C to stop.")
         try
