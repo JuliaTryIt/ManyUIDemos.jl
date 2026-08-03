@@ -281,83 +281,94 @@ function run_hub(port::Int=8000)
         println("=======================================================\n")
 
         demo_path = DEMO_PATHS[model.selected]
+        retry_launch = true
+        while retry_launch
+            retry_launch = false
 
-        stop_monitor = false
-        main_task = current_task()
-        esc_task = nothing
-        if model.mode in ("web", "webtui")
-            println("🌐 Server should be running at: http://127.0.0.1:$(model.port)")
-            println("Press Enter in this console to stop the server and return to Hub.")
-            esc_task = @async begin
-                try
-                    # Wait for the user to press Enter
-                    readline()
-                    if !stop_monitor
-                        # Throw an InterruptException locally to unblock wait(server)
-                        Base.throwto(main_task, InterruptException())
-                    end
-                catch
-                end
-            end
-        end
-
-        try
-            # We use a persistent module per demo so Revise.jl works correctly
-            mod_sym = Symbol("Demo_", replace(model.selected, r"[^a-zA-Z0-9]" => ""))
-            if !isdefined(Main, mod_sym)
-                Core.eval(Main, :(module $mod_sym end))
-            end
-            m = Core.eval(Main, mod_sym)
-            Core.eval(m, :(ARGS = [$(model.mode), string($(model.port))]))
-
-            if isdefined(Main, :Revise)
-                Core.eval(Main, :(Revise.includet($m, $demo_path)))
-            else
-                Base.include(m, demo_path)
-            end
-
-            if isdefined(m, :main)
-                Core.eval(m, :(Base.invokelatest(main)))
-            else
-                println("Error: No main() function found in $(model.selected)")
-            end
-        catch e
-            err = e isa LoadError ? e.error : e
-            if err isa ManyUIWeb.PortInUseError || (err isa Base.IOError && err.code == Base.UV_EADDRINUSE)
-                port_in_use = err isa ManyUIWeb.PortInUseError ? err.port : model.port
-                println("\n⚠️  Port $port_in_use is already in use!")
-                if Sys.isunix()
+            stop_monitor = false
+            main_task = current_task()
+            esc_task = nothing
+            if model.mode in ("web", "webtui")
+                println("🌐 Server should be running at: http://127.0.0.1:$(model.port)")
+                println("Press Enter in this console to stop the server and return to Hub.")
+                esc_task = @async begin
                     try
-                        # lsof -t -i:<port> returns just the PIDs
-                        pids = split(strip(read(`lsof -t -i:$port_in_use`, String)))
-                        if !isempty(pids) && !all(isempty, pids)
-                            println("It seems PID(s) $(join(pids, ", ")) are using this port.")
-                            print("Do you want to kill them to free the port? [y/N]: ")
-                            ans = lowercase(strip(readline()))
-                            if ans == "y" || ans == "yes"
-                                for pid in pids
-                                    run(ignorestatus(`kill -9 $pid`))
-                                end
-                                println("✅ Processes killed. You can try launching the demo again.")
-                            end
+                        # Wait for the user to press Enter
+                        readline()
+                        if !stop_monitor
+                            # Throw an InterruptException locally to unblock wait(server)
+                            Base.throwto(main_task, InterruptException())
                         end
                     catch
-                        println("Could not automatically determine or kill the process holding the port.")
                     end
                 end
-            elseif !(err isa InterruptException)
-                println(stderr, "\n❌ DEMO CRASHED:")
-                println(stderr, "Hub caught exception: ", typeof(err))
-                Base.showerror(stderr, e, catch_backtrace())
-                println(stderr, "\n")
             end
-            println("Demo exited or was interrupted.")
-        finally
-            stop_monitor = true
-        end
-        if model.mode == "tui"
-            println("\nPress Enter to return to the Hub...")
-            readline()
+
+            try
+                # We use a persistent module per demo so Revise.jl works correctly
+                mod_sym = Symbol("Demo_", replace(model.selected, r"[^a-zA-Z0-9]" => ""))
+                if !isdefined(Main, mod_sym)
+                    Core.eval(Main, :(module $mod_sym end))
+                end
+                m = Core.eval(Main, mod_sym)
+                Core.eval(m, :(ARGS = [$(model.mode), string($(model.port))]))
+
+                if isdefined(Main, :Revise)
+                    Core.eval(Main, :(Revise.includet($m, $demo_path)))
+                else
+                    Base.include(m, demo_path)
+                end
+
+                if isdefined(m, :main)
+                    Core.eval(m, :(Base.invokelatest(main)))
+                else
+                    println("Error: No main() function found in $(model.selected)")
+                end
+            catch e
+                stop_monitor = true
+                if esc_task !== nothing && !istaskdone(esc_task)
+                    Base.throwto(esc_task, InterruptException())
+                end
+
+                err = e isa LoadError ? e.error : e
+                if err isa ManyUIWeb.PortInUseError || (err isa Base.IOError && err.code == Base.UV_EADDRINUSE)
+                    port_in_use = err isa ManyUIWeb.PortInUseError ? err.port : model.port
+                    println("\n⚠️  Port $port_in_use is already in use!")
+                    if Sys.isunix()
+                        try
+                            # lsof -t -i:<port> returns just the PIDs
+                            pids = split(strip(read(`lsof -t -i:$port_in_use`, String)))
+                            if !isempty(pids) && !all(isempty, pids)
+                                println("It seems PID(s) $(join(pids, ", ")) are using this port.")
+                                print("Do you want to kill them to free the port? [y/N]: ")
+                                ans = lowercase(strip(readline()))
+                                if ans == "y" || ans == "yes"
+                                    for pid in pids
+                                        run(ignorestatus(`kill -9 $pid`))
+                                    end
+                                    println("✅ Processes killed. Relaunching the server now...")
+                                    retry_launch = true
+                                    continue
+                                end
+                            end
+                        catch
+                            println("Could not automatically determine or kill the process holding the port.")
+                        end
+                    end
+                elseif !(err isa InterruptException)
+                    println(stderr, "\n❌ DEMO CRASHED:")
+                    println(stderr, "Hub caught exception: ", typeof(err))
+                    Base.showerror(stderr, e, catch_backtrace())
+                    println(stderr, "\n")
+                end
+                println("Demo exited or was interrupted.")
+            finally
+                stop_monitor = true
+            end
+            if !retry_launch && model.mode == "tui"
+                println("\nPress Enter to return to the Hub...")
+                readline()
+            end
         end
     end
 end
