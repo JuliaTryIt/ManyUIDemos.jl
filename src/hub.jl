@@ -143,7 +143,7 @@ function update_hub_ui!(app, model)
         desc.text[] = get(DEMO_DESCRIPTIONS, model.selected, "No description available.")
     end
 
-    ct = ManyUI.query_one(app.root, "#compat_table", Static)
+    ct = ManyUI.query_one(app.root, "#compat_table", Label)
     if ct !== nothing
         ct.text[] = backend_capabilities_table(model.mode)
     end
@@ -237,7 +237,7 @@ function ManyUI.render(model::HubModel, ::TUI)
     right_panel = Container(
         Label("$(model.selected)"; id=:demo_title),
         Label(get(DEMO_DESCRIPTIONS, model.selected, "No description available."); id=:demo_desc),
-        Static(backend_capabilities_table(model.mode); id=:compat_table),
+        Label(backend_capabilities_table(model.mode); id=:compat_table),
         Label(""),
         Container(
             Label("Choose Backend:"; id=:backend_label),
