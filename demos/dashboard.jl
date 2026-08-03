@@ -108,6 +108,9 @@ function main()
         ManyUITUI.launch(dashboard_app; stylesheet = SHEET)
     elseif mode == "webtui"
         ManyUITUI.launch(dashboard_app; backend = WebBackend(port = port), stylesheet = SHEET)
+    elseif mode == "cimgui"
+        import ManyUICImGui
+        ManyUITUI.launch(dashboard_app; backend = ManyUICImGui.ImGuiBackend(), stylesheet = SHEET)
     else
         server = ManyUITUI.launch(dashboard_app, ManyUI.WebNative(); port = port)
         println("Dashboard running at ", ManyUIWeb.url(server))

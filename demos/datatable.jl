@@ -71,6 +71,9 @@ function main()
         ManyUITUI.launch(table_app; stylesheet = SHEET)
     elseif mode == "webtui"
         ManyUITUI.launch(table_app; backend = WebBackend(port = port), stylesheet = SHEET)
+    elseif mode == "cimgui"
+        import ManyUICImGui
+        ManyUITUI.launch(table_app; backend = ManyUICImGui.ImGuiBackend(), stylesheet = SHEET)
     else
         server = ManyUITUI.launch(table_app, ManyUI.WebNative(); port = port)
         println("Table running at ", ManyUIWeb.url(server))

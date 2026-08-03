@@ -130,6 +130,19 @@ function main()
         finally
             ManyUIWeb.stop!(server)
         end
+    elseif mode == "cimgui"
+        import ManyUICImGui
+        app = ManyUITUI.launch(gallery_app, ManyUICImGui.ImGuiBackend(); stylesheet = SHEET, wait = false)
+        try
+            while app.running
+                sleep(0.1)
+                ManyUI.post!(app, ManyUI.TickEvent(time()))
+            end
+        catch e
+            e isa InterruptException || rethrow()
+        finally
+            ManyUITUI.stop!(app.driver)
+        end
     else
         server = ManyUITUI.launch(gallery_app, ManyUI.WebNative(); port = port, wait = false)
         println("Gallery WebNative running on http://127.0.0.1:$(port)")

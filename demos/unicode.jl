@@ -99,6 +99,9 @@ function main()
         ManyUITUI.launch(unicode_app; stylesheet = SHEET)
     elseif mode == "webtui"
         ManyUITUI.launch(unicode_app; backend = WebBackend(port = port), stylesheet = SHEET)
+    elseif mode == "cimgui"
+        import ManyUICImGui
+        ManyUITUI.launch(unicode_app; backend = ManyUICImGui.ImGuiBackend(), stylesheet = SHEET)
     else
         server = ManyUITUI.launch(unicode_app, ManyUI.WebNative(); port = port)
         println("Unicode running at ", ManyUIWeb.url(server))

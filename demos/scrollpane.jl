@@ -170,6 +170,9 @@ function main()
         ManyUITUI.launch(log_app; stylesheet = SHEET)
     elseif mode == "webtui"
         ManyUITUI.launch(log_app; backend = WebBackend(port = port), stylesheet = SHEET)
+    elseif mode == "cimgui"
+        import ManyUICImGui
+        ManyUITUI.launch(log_app; backend = ManyUICImGui.ImGuiBackend(), stylesheet = SHEET)
     else
         server = ManyUITUI.launch(log_app, ManyUI.WebNative(); port = port)
         println("Log running at ", ManyUIWeb.url(server))

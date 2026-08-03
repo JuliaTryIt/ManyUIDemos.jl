@@ -56,14 +56,14 @@ const HUB_SHEET = parse_css("""
 """)
 
 const COMPAT_MATRIX = Dict(
-    "dashboard.jl" => (tui=true, web=true, webtui=true),
-    "datatable.jl" => (tui=true, web=true, webtui=true),
-    "gallery.jl"   => (tui=true, web=true, webtui=true),
-    "scrollpane.jl"=> (tui=true, web=true, webtui=true),
-    "unicode.jl"   => (tui=true, web=true, webtui=true),
-    "life.jl"      => (tui=true, web=true, webtui=true),
-    "rain.jl"      => (tui=true, web=true, webtui=true),
-    "snake.jl"     => (tui=true, web=true, webtui=true),
+    "dashboard.jl" => (tui=true, web=true, webtui=true, cimgui=true),
+    "datatable.jl" => (tui=true, web=true, webtui=true, cimgui=true),
+    "gallery.jl"   => (tui=true, web=true, webtui=true, cimgui=true),
+    "scrollpane.jl"=> (tui=true, web=true, webtui=true, cimgui=true),
+    "unicode.jl"   => (tui=true, web=true, webtui=true, cimgui=true),
+    "life.jl"      => (tui=true, web=true, webtui=true, cimgui=false),
+    "rain.jl"      => (tui=true, web=true, webtui=true, cimgui=false),
+    "snake.jl"     => (tui=true, web=true, webtui=true, cimgui=false),
 )
 const DEMO_PATHS = Dict{String, String}()
 
@@ -93,7 +93,7 @@ end
 function ManyUI.execute!(model::HubModel, action::SelectDemo)
     if action.idx > 0 && action.idx <= length(model.demos)
         model.selected = model.demos[action.idx]
-        compat = get(COMPAT_MATRIX, model.selected, (tui=true, web=true, webtui=true))
+        compat = get(COMPAT_MATRIX, model.selected, (tui=true, web=true, webtui=true, cimgui=true))
 
         if model.mode == "tui" && !compat.tui
             model.mode = compat.web ? "web" : "webtui"
@@ -101,8 +101,29 @@ function ManyUI.execute!(model::HubModel, action::SelectDemo)
             model.mode = compat.tui ? "tui" : "webtui"
         elseif model.mode == "webtui" && !compat.webtui
             model.mode = compat.web ? "web" : "tui"
+        elseif model.mode == "cimgui" && !compat.cimgui
+            model.mode = compat.web ? "web" : "tui"
         end
     end
+end
+
+function backend_capabilities_table(mode::String)
+    mode_name = Dict("tui" => "TUI", "web" => "Web Native", "webtui" => "WebTerm", "cimgui" => "CImGui")[mode]
+    
+    lines = ["Capabilities for $mode_name:",
+             "┌───────────────────┬─────────────┐",
+             "│ Demo              │ Supported?  │",
+             "├───────────────────┼─────────────┤"]
+    
+    for demo in sort(collect(keys(DEMO_PATHS)))
+        compat = get(COMPAT_MATRIX, demo, (tui=true, web=true, webtui=true, cimgui=true))
+        is_supported = getproperty(compat, Symbol(mode))
+        icon = is_supported ? "✅" : "❌"
+        padded_demo = rpad(demo, 17)
+        push!(lines, "│ $padded_demo │      $icon      │")
+    end
+    push!(lines, "└───────────────────┴─────────────┘")
+    return join(lines, "\n")
 end
 
 function update_hub_ui!(app, model)
@@ -116,22 +137,19 @@ function update_hub_ui!(app, model)
         desc.text[] = get(DEMO_DESCRIPTIONS, model.selected, "No description available.")
     end
 
-    compat = get(COMPAT_MATRIX, model.selected, (tui=true, web=true, webtui=true))
-    t_icon = compat.tui ? "✅" : "❌"
-    w_icon = compat.web ? "✅" : "❌"
-    wt_icon = compat.webtui ? "✅" : "❌"
-
-    cl = ManyUI.query_one(app.root, "#compat_label", Label)
-    if cl !== nothing
-        cl.text[] = "Compatibility:  $t_icon TUI   $w_icon Web Native   $wt_icon WebTerm"
+    ct = ManyUI.query_one(app.root, "#compat_table", Static)
+    if ct !== nothing
+        ct.text[] = backend_capabilities_table(model.mode)
     end
 
     launch_text = if model.mode == "web"
         "🌐 Launch Web Server (opens port 8000)"
     elseif model.mode == "tui"
         "📺 Launch in Terminal"
-    else
+    elseif model.mode == "webtui"
         "🖥️ Launch WebTerm (opens port 8000)"
+    else
+        "🖼️ Launch CImGui Window"
     end
 
     btn = ManyUI.query_one(app.root, "#launch_btn", Button)
@@ -145,9 +163,10 @@ function update_hub_ui!(app, model)
         !compat.tui && push!(disabled_set, 1)
         !compat.web && push!(disabled_set, 2)
         !compat.webtui && push!(disabled_set, 3)
+        !compat.cimgui && push!(disabled_set, 4)
         rg.disabled[] = disabled_set
 
-        internal_modes = ["tui", "web", "webtui"]
+        internal_modes = ["tui", "web", "webtui", "cimgui"]
         idx_mode = findfirst(==(model.mode), internal_modes)
         if idx_mode !== nothing
             rg.selected[] = idx_mode
@@ -174,14 +193,15 @@ function ManyUI.render(model::HubModel, ::TUI)
         lst.sel.anchor = idx
     end
 
-    display_modes = ["TUI", "Web (Native)", "WebTerm"]
-    internal_modes = ["tui", "web", "webtui"]
+    display_modes = ["TUI", "Web (Native)", "WebTerm", "CImGui (Native OpenGL)"]
+    internal_modes = ["tui", "web", "webtui", "cimgui"]
 
-    compat = get(COMPAT_MATRIX, model.selected, (tui=true, web=true, webtui=true))
+    compat = get(COMPAT_MATRIX, model.selected, (tui=true, web=true, webtui=true, cimgui=true))
     disabled_set = Set{Int}()
     !compat.tui && push!(disabled_set, 1)
     !compat.web && push!(disabled_set, 2)
     !compat.webtui && push!(disabled_set, 3)
+    !compat.cimgui && push!(disabled_set, 4)
 
     rg = RadioGroup(display_modes, (w) -> begin
         idx = w.selected[]
@@ -198,25 +218,20 @@ function ManyUI.render(model::HubModel, ::TUI)
         rg.cursor[] = idx_mode
     end
 
-    compat = get(COMPAT_MATRIX, model.selected, (tui=true, web=true, webtui=true))
-    t_icon = compat.tui ? "✅" : "❌"
-    w_icon = compat.web ? "✅" : "❌"
-    wt_icon = compat.webtui ? "✅" : "❌"
-
-    compat_text = "Compatibility:  $t_icon TUI   $w_icon Web Native   $wt_icon WebTerm"
-
     launch_text = if model.mode == "web"
         "🌐 Launch Web Server (opens port $(model.port))"
     elseif model.mode == "tui"
         "📺 Launch in Terminal"
-    else
+    elseif model.mode == "webtui"
         "🖥️ Launch WebTerm (opens port $(model.port))"
+    else
+        "🖼️ Launch CImGui Window"
     end
 
     right_panel = Container(
         Label("$(model.selected)"; id=:demo_title),
         Label(get(DEMO_DESCRIPTIONS, model.selected, "No description available."); id=:demo_desc),
-        Label(compat_text; id=:compat_label),
+        Static(backend_capabilities_table(model.mode); id=:compat_table),
         Label(""),
         Container(
             Label("Choose Backend:"; id=:backend_label),
