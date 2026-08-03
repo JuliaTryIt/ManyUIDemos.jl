@@ -60,6 +60,11 @@ jobs:
           git config --global \
             url."https://x-access-token:${MANYUI_READ_TOKEN}@github.com/".insteadOf \
             "https://github.com/"
+      - name: Check out Tachikoma fork branch
+        shell: bash
+        run: |
+          git clone --depth 1 --branch agent/embedded-terminal-sessions \
+            https://github.com/s-celles/Tachikoma.jl ../Tachikoma
       - name: Dev unregistered dependencies
         env:
           JULIA_PKG_USE_CLI_GIT: "true"
@@ -71,10 +76,9 @@ jobs:
           push!(deps, PackageSpec(url="https://github.com/s-celles/ManyUITUI.jl"))
           push!(deps, PackageSpec(url="https://github.com/s-celles/ManyUICLI.jl"))
           push!(deps, PackageSpec(url="https://github.com/s-celles/ManyUIWeb.jl"))
-          push!(deps, PackageSpec(url="https://github.com/s-celles/Tachikoma.jl"))
+          push!(deps, PackageSpec(path=joinpath("..", "Tachikoma")))
           push!(deps, PackageSpec(
-            url="https://github.com/s-celles/Tachikoma.jl",
-            subdir="demos/TachikomaDemos",
+            path=joinpath("..", "Tachikoma", "demos", "TachikomaDemos"),
           ))
           Pkg.develop(deps)
       - uses: julia-actions/julia-buildpkg@v1
