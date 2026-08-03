@@ -20,6 +20,7 @@
 # 4. The package
 !/Project.toml
 !/src/**/*.jl
+!/ext/**/*.jl
 
 # 5. Tests
 !/test/**/*.jl
