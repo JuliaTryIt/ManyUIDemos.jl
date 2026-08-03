@@ -82,7 +82,13 @@ function register_demo!(name::String, description::String, path::String, compat=
     DEMO_DESCRIPTIONS[name] = description
     DEMO_PATHS[name] = path
     if compat !== nothing
-        COMPAT_MATRIX[name] = compat
+        compat_full = (
+            tui = hasproperty(compat, :tui) ? compat.tui : false,
+            web = hasproperty(compat, :web) ? compat.web : false,
+            webtui = hasproperty(compat, :webtui) ? compat.webtui : false,
+            cimgui = hasproperty(compat, :cimgui) ? compat.cimgui : false
+        )
+        COMPAT_MATRIX[name] = compat_full
     end
 end
 
