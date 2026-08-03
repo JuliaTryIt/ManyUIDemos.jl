@@ -118,6 +118,18 @@ function main()
         server = serve(gallery_app; port = port, stylesheet = SHEET, title = "Gallery WebTUI")
         println("Gallery WebTUI running at ", ManyUIWeb.url(server))
         println("Ctrl-C to stop.")
+        try
+            while true
+                sleep(0.1)
+                for s in ManyUIWeb.sessions(server)
+                    ManyUI.post!(s.app, ManyUI.TickEvent(time()))
+                end
+            end
+        catch e
+            e isa InterruptException || rethrow()
+        finally
+            ManyUIWeb.stop!(server)
+        end
     else
         server = ManyUITUI.launch(gallery_app, ManyUI.WebNative(); port = port)
         println("Gallery WebNative running on http://127.0.0.1:$(port)")
