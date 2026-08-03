@@ -14,6 +14,7 @@
 
 using ManyUI, ManyUITUI
 using ManyUIWeb
+import CImGui, GLFW, ModernGL
 import ManyUICImGui
 
 const ELEMENTS = [
@@ -73,7 +74,7 @@ function main()
     elseif mode == "webtui"
         ManyUITUI.launch(table_app; backend = WebBackend(port = port), stylesheet = SHEET)
     elseif mode == "cimgui"
-        ManyUITUI.launch(table_app; backend = ManyUICImGui.ImGuiBackend(), stylesheet = SHEET)
+        ManyUICImGui.launch_manyui(table_app; title="DataTable CImGui")
     else
         server = ManyUITUI.launch(table_app, ManyUI.WebNative(); port = port)
         println("Table running at ", ManyUIWeb.url(server))

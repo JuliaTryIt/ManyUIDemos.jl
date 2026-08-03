@@ -56,10 +56,10 @@ const HUB_SHEET = parse_css("""
 """)
 
 const COMPAT_MATRIX = Dict(
-    "dashboard.jl" => (tui=true, web=true, webtui=true, cimgui=true),
+    "dashboard.jl" => (tui=true, web=true, webtui=true, cimgui=false),
     "datatable.jl" => (tui=true, web=true, webtui=true, cimgui=true),
     "gallery.jl"   => (tui=true, web=true, webtui=true, cimgui=true),
-    "scrollpane.jl"=> (tui=true, web=true, webtui=true, cimgui=true),
+    "scrollpane.jl"=> (tui=true, web=true, webtui=true, cimgui=false),
     "unicode.jl"   => (tui=true, web=true, webtui=true, cimgui=true),
     "life.jl"      => (tui=true, web=true, webtui=true, cimgui=false),
     "rain.jl"      => (tui=true, web=true, webtui=true, cimgui=false),
@@ -113,6 +113,7 @@ function ManyUI.execute!(model::HubModel, action::SelectDemo)
     end
 end
 
+import CImGui, GLFW, ModernGL
 import ManyUICImGui
 
 function backend_capabilities_table(mode::String)
@@ -131,17 +132,17 @@ function backend_capabilities_table(mode::String)
     caps = ManyUI.backend_capabilities(b)
     
     lines = ["Capabilities for $mode_name:",
-             "┌────────────────┬────────────┐",
-             "│ Capability     │ Supported? │",
-             "├────────────────┼────────────┤"]
+             "+-----------------+------+",
+             "| Capability      | OK?  |",
+             "+-----------------+------+"]
     
     for k in keys(caps)
         val = getproperty(caps, k)
-        icon = val ? "✅" : "❌"
-        padded_k = rpad(String(k), 14)
-        push!(lines, "│ $padded_k │     $icon     │")
+        mark = val ? " Yes" : " No "
+        padded_k = rpad(String(k), 15)
+        push!(lines, "| $padded_k | $mark |")
     end
-    push!(lines, "└────────────────┴────────────┘")
+    push!(lines, "+-----------------+------+")
     return join(lines, "\n")
 end
 

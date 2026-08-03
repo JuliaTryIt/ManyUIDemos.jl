@@ -18,6 +18,7 @@
 
 using ManyUI, ManyUITUI
 using ManyUIWeb
+import CImGui, GLFW, ModernGL
 import ManyUICImGui
 
 """
@@ -101,7 +102,7 @@ function main()
     elseif mode == "webtui"
         ManyUITUI.launch(unicode_app; backend = WebBackend(port = port), stylesheet = SHEET)
     elseif mode == "cimgui"
-        ManyUITUI.launch(unicode_app; backend = ManyUICImGui.ImGuiBackend(), stylesheet = SHEET)
+        ManyUICImGui.launch_manyui(unicode_app; title="Unicode CImGui")
     else
         server = ManyUITUI.launch(unicode_app, ManyUI.WebNative(); port = port)
         println("Unicode running at ", ManyUIWeb.url(server))

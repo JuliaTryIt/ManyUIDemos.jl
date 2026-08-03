@@ -15,7 +15,6 @@
 
 using ManyUI, ManyUITUI
 using ManyUIWeb
-import ManyUICImGui
 
 const LANGUAGES = [
     "Julia", "Python", "Rust", "Go", "C", "C++", "Haskell", "OCaml",
@@ -109,8 +108,6 @@ function main()
         ManyUITUI.launch(dashboard_app; stylesheet = SHEET)
     elseif mode == "webtui"
         ManyUITUI.launch(dashboard_app; backend = WebBackend(port = port), stylesheet = SHEET)
-    elseif mode == "cimgui"
-        ManyUITUI.launch(dashboard_app; backend = ManyUICImGui.ImGuiBackend(), stylesheet = SHEET)
     else
         server = ManyUITUI.launch(dashboard_app, ManyUI.WebNative(); port = port)
         println("Dashboard running at ", ManyUIWeb.url(server))
