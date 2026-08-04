@@ -113,7 +113,6 @@ function ManyUI.execute!(model::HubModel, action::SelectDemo)
     end
 end
 
-import CImGui, GLFW, ModernGL
 import ManyUICImGui
 
 function backend_capabilities_table(mode::String)
