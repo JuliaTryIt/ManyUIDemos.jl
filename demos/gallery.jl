@@ -134,6 +134,9 @@ function main()
         end
     elseif mode == "cimgui"
         ManyUICImGui.launch_manyui(gallery_app; title="Gallery CImGui")
+    elseif mode == "cimguitui"
+        ManyUICImGui.launch_tui(gallery_app; title="Gallery CImGui TUI",
+                                stylesheet = SHEET)
     else
         server = ManyUITUI.launch(gallery_app, ManyUI.WebNative(); port = port, wait = false)
         println("Gallery WebNative running on http://127.0.0.1:$(port)")

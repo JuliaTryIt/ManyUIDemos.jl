@@ -9,8 +9,8 @@ function __init__()
     ManyUIDemos.HubApp.register_demo!(
         "Tachikoma Demos",
         "Tachikoma Demos Hub\n\nLaunches the native Tachikoma demo browser to explore all Tachikoma widgets and examples.",
-        joinpath(WRAPPERS_DIR, "tk_launcher.jl"),
-        (tui=true, web=false, webtui=true)
+        joinpath(WRAPPERS_DIR, "tk_cimguitui.jl"),
+        (tui=true, web=false, webtui=true, cimgui=false, cimguitui=true)
     )
 end
 

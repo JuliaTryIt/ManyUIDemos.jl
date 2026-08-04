@@ -11,6 +11,7 @@
 
 using ManyUI, ManyUITUI
 using ManyUIWeb
+using CImGui, GLFW, ModernGL
 import ManyUICImGui
 
 """
@@ -139,6 +140,17 @@ function main()
             ManyUITUI.stop!(app.driver)
             println("stopped")
         end
+    elseif mode == "cimguitui"
+        driver = ManyUITUI.make_driver(ManyUICImGui.ImGuiTUIBackend())
+        app = ManyUITUI.App(life_app(), driver; stylesheet = SHEET)
+        ManyUICImGui.launch_tui_app!(app;
+            title = "Life CImGui TUI",
+            on_tick = () -> begin
+                r = app.root
+                r isa LifeBoard && step!(r)
+                ManyUITUI.post!(app, ManyUI.TickEvent(time()))
+            end,
+            tick_interval = 0.05)
     else
         port = port
         server = ManyUITUI.launch(life_app, ManyUI.WebNative(); port = port, wait = false)

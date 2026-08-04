@@ -19,9 +19,11 @@ Run the central demo hub to interactively select and launch demos.
 
 # Options
 - `-p, --port <port>`: The port to use for Web/WebTUI modes (default: 8000).
+- `-b, --backend <backend>`: The backend to run the hub itself with
+  (one of "tui", "web", "webtui", "cimgui", "cimguitui"; default: "tui").
 """
-@cast function hub(; port::Int=8000)
-    HubApp.run_hub(port)
+@cast function hub(; port::Int=8000, backend::String="tui")
+    HubApp.run_hub(port; hub_backend=backend)
 end
 
 """

@@ -56,14 +56,14 @@ const HUB_SHEET = parse_css("""
 """)
 
 const COMPAT_MATRIX = Dict(
-    "dashboard.jl" => (tui=true, web=true, webtui=true, cimgui=false),
-    "datatable.jl" => (tui=true, web=true, webtui=true, cimgui=true),
-    "gallery.jl"   => (tui=true, web=true, webtui=true, cimgui=true),
-    "scrollpane.jl"=> (tui=true, web=true, webtui=true, cimgui=false),
-    "unicode.jl"   => (tui=true, web=true, webtui=true, cimgui=true),
-    "life.jl"      => (tui=true, web=true, webtui=true, cimgui=false),
-    "rain.jl"      => (tui=true, web=true, webtui=true, cimgui=false),
-    "snake.jl"     => (tui=true, web=true, webtui=true, cimgui=false),
+    "dashboard.jl" => (tui=true, web=true, webtui=true, cimgui=false, cimguitui=true),
+    "datatable.jl" => (tui=true, web=true, webtui=true, cimgui=true, cimguitui=true),
+    "gallery.jl"   => (tui=true, web=true, webtui=true, cimgui=true, cimguitui=true),
+    "scrollpane.jl"=> (tui=true, web=true, webtui=true, cimgui=false, cimguitui=true),
+    "unicode.jl"   => (tui=true, web=true, webtui=true, cimgui=true, cimguitui=true),
+    "life.jl"      => (tui=true, web=true, webtui=true, cimgui=false, cimguitui=true),
+    "rain.jl"      => (tui=true, web=true, webtui=true, cimgui=false, cimguitui=true),
+    "snake.jl"     => (tui=true, web=true, webtui=true, cimgui=false, cimguitui=true),
 )
 const DEMO_PATHS = Dict{String, String}()
 
@@ -86,7 +86,8 @@ function register_demo!(name::String, description::String, path::String, compat=
             tui = hasproperty(compat, :tui) ? compat.tui : false,
             web = hasproperty(compat, :web) ? compat.web : false,
             webtui = hasproperty(compat, :webtui) ? compat.webtui : false,
-            cimgui = hasproperty(compat, :cimgui) ? compat.cimgui : false
+            cimgui = hasproperty(compat, :cimgui) ? compat.cimgui : false,
+            cimguitui = hasproperty(compat, :cimguitui) ? compat.cimguitui : false
         )
         COMPAT_MATRIX[name] = compat_full
     end
@@ -99,7 +100,8 @@ end
 function ManyUI.execute!(model::HubModel, action::SelectDemo)
     if action.idx > 0 && action.idx <= length(model.demos)
         model.selected = model.demos[action.idx]
-        compat = get(COMPAT_MATRIX, model.selected, (tui=true, web=true, webtui=true, cimgui=true))
+        compat = get(COMPAT_MATRIX, model.selected,
+            (tui=true, web=true, webtui=true, cimgui=true, cimguitui=true))
 
         if model.mode == "tui" && !compat.tui
             model.mode = compat.web ? "web" : "webtui"
@@ -108,7 +110,11 @@ function ManyUI.execute!(model::HubModel, action::SelectDemo)
         elseif model.mode == "webtui" && !compat.webtui
             model.mode = compat.web ? "web" : "tui"
         elseif model.mode == "cimgui" && !compat.cimgui
-            model.mode = compat.web ? "web" : "tui"
+            model.mode = compat.cimguitui ? "cimguitui" :
+                         (compat.web ? "web" : "tui")
+        elseif model.mode == "cimguitui" && !compat.cimguitui
+            model.mode = compat.cimgui ? "cimgui" :
+                         (compat.web ? "web" : "tui")
         end
     end
 end
@@ -116,8 +122,10 @@ end
 import ManyUICImGui
 
 function backend_capabilities_table(mode::String)
-    mode_name = Dict("tui" => "TUI", "web" => "Web Native", "webtui" => "WebTerm", "cimgui" => "CImGui")[mode]
-    
+    mode_name = Dict("tui" => "TUI", "web" => "Web Native",
+                     "webtui" => "WebTerm", "cimgui" => "CImGui",
+                     "cimguitui" => "CImGui TUI")[mode]
+
     b = if mode == "tui"
         ManyUITUI.TerminalBackend()
     elseif mode == "web"
@@ -126,15 +134,17 @@ function backend_capabilities_table(mode::String)
         ManyUIWeb.WebBackend()
     elseif mode == "cimgui"
         ManyUICImGui.ImGuiBackend()
+    elseif mode == "cimguitui"
+        ManyUICImGui.ImGuiTUIBackend()
     end
-    
+
     caps = ManyUI.backend_capabilities(b)
-    
+
     lines = ["Capabilities for $mode_name:",
              "+-----------------+------+",
              "| Capability      | OK?  |",
              "+-----------------+------+"]
-    
+
     for k in keys(caps)
         val = getproperty(caps, k)
         mark = val ? " Yes" : " No "
@@ -167,8 +177,10 @@ function update_hub_ui!(app, model)
         "📺 Launch in Terminal"
     elseif model.mode == "webtui"
         "🖥️ Launch WebTerm (opens port 8000)"
+    elseif model.mode == "cimgui"
+        "🖼️ Launch CImGui Window (native widgets)"
     else
-        "🖼️ Launch CImGui Window"
+        "🖥️ Launch CImGui TUI (terminal grid)"
     end
 
     btn = ManyUI.query_one(app.root, "#launch_btn", Button)
@@ -178,15 +190,17 @@ function update_hub_ui!(app, model)
 
     rg = ManyUI.query_one(app.root, "#backend_mode", RadioGroup)
     if rg !== nothing
-        compat = get(COMPAT_MATRIX, model.selected, (tui=true, web=true, webtui=true, cimgui=true))
+        compat = get(COMPAT_MATRIX, model.selected,
+            (tui=true, web=true, webtui=true, cimgui=true, cimguitui=true))
         disabled_set = Set{Int}()
         !compat.tui && push!(disabled_set, 1)
         !compat.web && push!(disabled_set, 2)
         !compat.webtui && push!(disabled_set, 3)
         !compat.cimgui && push!(disabled_set, 4)
+        !compat.cimguitui && push!(disabled_set, 5)
         rg.disabled[] = disabled_set
 
-        internal_modes = ["tui", "web", "webtui", "cimgui"]
+        internal_modes = ["tui", "web", "webtui", "cimgui", "cimguitui"]
         idx_mode = findfirst(==(model.mode), internal_modes)
         if idx_mode !== nothing
             rg.selected[] = idx_mode
@@ -213,15 +227,18 @@ function ManyUI.render(model::HubModel, ::TUI)
         lst.sel.anchor = idx
     end
 
-    display_modes = ["TUI", "Web (Native)", "WebTerm", "CImGui (Native OpenGL)"]
-    internal_modes = ["tui", "web", "webtui", "cimgui"]
+    display_modes = ["TUI", "Web (Native)", "WebTerm",
+                     "CImGui (Native)", "CImGui TUI"]
+    internal_modes = ["tui", "web", "webtui", "cimgui", "cimguitui"]
 
-    compat = get(COMPAT_MATRIX, model.selected, (tui=true, web=true, webtui=true, cimgui=true))
+    compat = get(COMPAT_MATRIX, model.selected,
+        (tui=true, web=true, webtui=true, cimgui=true, cimguitui=true))
     disabled_set = Set{Int}()
     !compat.tui && push!(disabled_set, 1)
     !compat.web && push!(disabled_set, 2)
     !compat.webtui && push!(disabled_set, 3)
     !compat.cimgui && push!(disabled_set, 4)
+    !compat.cimguitui && push!(disabled_set, 5)
 
     rg = RadioGroup(display_modes, (w) -> begin
         idx = w.selected[]
@@ -244,8 +261,10 @@ function ManyUI.render(model::HubModel, ::TUI)
         "📺 Launch in Terminal"
     elseif model.mode == "webtui"
         "🖥️ Launch WebTerm (opens port $(model.port))"
+    elseif model.mode == "cimgui"
+        "🖼️ Launch CImGui Window (native widgets)"
     else
-        "🖼️ Launch CImGui Window"
+        "🖥️ Launch CImGui TUI (terminal grid)"
     end
 
     right_panel = Container(
@@ -290,7 +309,66 @@ function ManyUI.render(model::HubModel, ::TUI)
     )
 end
 
-function run_hub(port::Int=8000)
+const HUB_BACKENDS = Dict{String,Function}(
+    "tui"      => (model; kwargs...) ->
+        ManyUITUI.launch(model, TUI(); stylesheet=get(kwargs, :stylesheet,
+                                                      HUB_SHEET)),
+    "web"      => (model; kwargs...) ->
+        _launch_web_hub(model, ManyUI.WebNative();
+                        port=get(kwargs, :port, 8000),
+                        stylesheet=get(kwargs, :stylesheet, HUB_SHEET)),
+    "webtui"   => (model; kwargs...) ->
+        ManyUITUI.launch(model, TUI();
+                         backend=ManyUIWeb.WebBackend(),
+                         port=get(kwargs, :port, 8000),
+                         stylesheet=get(kwargs, :stylesheet, HUB_SHEET)),
+    "cimgui"   => (model; kwargs...) ->
+        ManyUICImGui.launch_manyui(() -> ManyUI.render(model, TUI());
+                                   title="ManyUI Hub (CImGui)"),
+    "cimguitui"=> (model; kwargs...) ->
+        ManyUICImGui.launch_tui(() -> ManyUI.render(model, TUI());
+                                title="ManyUI Hub (CImGui TUI)",
+                                stylesheet=HUB_SHEET),
+)
+
+# Web-native hub needs the server to block until the user returns, so the
+# hub loop can resume in the console after the demo is launched.
+function _launch_web_hub(model, backend; port::Int=8000, kwargs...)
+    server = ManyUITUI.launch(() -> ManyUI.render(model, TUI()), backend;
+                              port=port, wait=false, kwargs...)
+    println("🌐 Hub running at ", ManyUIWeb.url(server))
+    println("👉 User input: browser (", ManyUIWeb.url(server), ")")
+    println("   Press Enter in this console to stop the hub server.")
+    try
+        readline()
+    catch e
+        e isa InterruptException || rethrow()
+    finally
+        ManyUITUI.stop!(server)
+    end
+end
+
+# Where the user's interaction continues after the hub is launched, per
+# backend. Printed BEFORE the hub blocks so the user knows where to look.
+const HUB_FLUX_MESSAGE = Dict{String,String}(
+    "tui"       => "📺 User input: console (terminal)",
+    "web"       => "🌐 User input: browser (http://127.0.0.1:%port%)",
+    "webtui"    => "🖥️  User input: browser (http://127.0.0.1:%port%)",
+    "cimgui"    => "🖼️  User input: CImGui window (native widgets)",
+    "cimguitui" => "🖥️  User input: CImGui TUI window (terminal grid)",
+)
+
+# Where the user's interaction continues after a DEMO is launched, per
+# mode. Printed so the user always knows where to look.
+const DEMO_FLUX_MESSAGE = Dict{String,String}(
+    "tui"       => "📺 User input: console (terminal)",
+    "web"       => "🌐 User input: browser (http://127.0.0.1:%port%)",
+    "webtui"    => "🖥️  User input: browser (http://127.0.0.1:%port%)",
+    "cimgui"    => "🖼️  User input: CImGui window (native widgets)",
+    "cimguitui" => "🖥️  User input: CImGui TUI window (terminal grid)",
+)
+
+function run_hub(port::Int=8000; hub_backend::String="tui")
     demos_dir = joinpath(pkgdir(@__MODULE__), "demos")
     demo_files = filter(f -> endswith(f, ".jl") && f != "tachikoma_web.jl", readdir(demos_dir))
 
@@ -300,11 +378,36 @@ function run_hub(port::Int=8000)
 
     all_demos = sort(collect(keys(DEMO_PATHS)))
 
-    while true
-        model = HubModel(all_demos, isempty(all_demos) ? "" : all_demos[1], "tui", false, false, port)
+    # Validate the hub backend.
+    hub_launcher = get(HUB_BACKENDS, hub_backend) do
+        nothing
+    end
+    if hub_launcher === nothing
+        error("Unknown hub backend: '$hub_backend'. " *
+              "Valid: $(join(sort(collect(keys(HUB_BACKENDS))), ", "))")
+    end
 
-        println("\nStarting ManyUI Hub...")
-        ManyUITUI.launch(model, TUI(); stylesheet=HUB_SHEET)
+    while true
+        model = HubModel(all_demos, isempty(all_demos) ? "" : all_demos[1],
+                         "tui", false, false, port)
+
+        # Default the demo mode to the hub backend if it is compatible,
+        # so launching a demo from a web/cimgui hub does not drop back to
+        # the terminal unexpectedly.
+        if hasproperty(COMPAT_MATRIX[model.selected], Symbol(hub_backend))
+            if getproperty(COMPAT_MATRIX[model.selected], Symbol(hub_backend))
+                model.mode = hub_backend
+            end
+        end
+
+        println("\nStarting ManyUI Hub (backend: $hub_backend)...")
+        flux_msg = get(HUB_FLUX_MESSAGE, hub_backend, "")
+        if occursin("%port%", flux_msg)
+            flux_msg = replace(flux_msg, "%port%" => string(port))
+        end
+        println(flux_msg)
+
+        hub_launcher(model; port=port, stylesheet=HUB_SHEET)
 
         if model.should_quit || !model.launch_requested
             println("Exiting hub.")
@@ -313,6 +416,12 @@ function run_hub(port::Int=8000)
 
         println("\n=======================================================")
         println("Launching: $(model.selected) in $(model.mode) mode")
+        # Always tell the user where the demo's interaction continues.
+        demo_flux = get(DEMO_FLUX_MESSAGE, model.mode, "")
+        if occursin("%port%", demo_flux)
+            demo_flux = replace(demo_flux, "%port%" => string(model.port))
+        end
+        println(demo_flux)
         println("=======================================================\n")
 
         demo_path = DEMO_PATHS[model.selected]
@@ -337,6 +446,8 @@ function run_hub(port::Int=8000)
                     catch
                     end
                 end
+            elseif model.mode in ("cimgui", "cimguitui")
+                println("🖥️  CImGui window should be open. Close it to return to Hub.")
             end
 
             try

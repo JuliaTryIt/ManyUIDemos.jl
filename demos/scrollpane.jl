@@ -12,6 +12,8 @@
 
 using ManyUI, ManyUITUI
 using ManyUIWeb
+using CImGui, GLFW, ModernGL
+import ManyUICImGui
 
 const LEVELS = [("INFO", rgb(0x7d, 0xd3, 0xfc)),
                 ("WARN", rgb(0xfb, 0xbf, 0x24)),
@@ -170,6 +172,9 @@ function main()
         ManyUITUI.launch(log_app; stylesheet = SHEET)
     elseif mode == "webtui"
         ManyUITUI.launch(log_app; backend = WebBackend(port = port), stylesheet = SHEET)
+    elseif mode == "cimguitui"
+        ManyUICImGui.launch_tui(log_app; title="Scrollpane CImGui TUI",
+                                stylesheet = SHEET)
     else
         server = ManyUITUI.launch(log_app, ManyUI.WebNative(); port = port)
         println("Log running at ", ManyUIWeb.url(server))

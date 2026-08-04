@@ -5,6 +5,10 @@ default:
 hub:
 	julia --project=@. -e 'using ManyUIDemos; ManyUIDemos.command_main(["hub"])'
 
+# Run the hub with a specific backend (tui, web, webtui, cimgui, cimguitui)
+hubb backend="tui":
+	julia --project=@. -e 'using ManyUIDemos; ManyUIDemos.command_main(["hub", "--backend", "{{backend}}"])'
+
 # Run the architecture harness demo
 harness:
 	julia --project=@. -e 'using ManyUIDemos; ManyUIDemos.command_main(["harness"])'

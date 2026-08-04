@@ -11,6 +11,7 @@
 
 using ManyUI, ManyUITUI
 using ManyUIWeb
+using CImGui, GLFW, ModernGL
 import ManyUICImGui
 
 # Halfwidth katakana: one cell each, unlike their fullwidth cousins.
@@ -156,6 +157,17 @@ function main()
             ManyUITUI.stop!(app.driver)
             println("stopped")
         end
+    elseif mode == "cimguitui"
+        driver = ManyUITUI.make_driver(ManyUICImGui.ImGuiTUIBackend())
+        app = ManyUITUI.App(rain_app(), driver; stylesheet = SHEET)
+        ManyUICImGui.launch_tui_app!(app;
+            title = "Rain CImGui TUI",
+            on_tick = () -> begin
+                r = app.root
+                r isa Rain && (isempty(r.drops) && fit!(r, ManyUITUI.buffer_size(app.back)); step!(r))
+                ManyUITUI.post!(app, ManyUI.TickEvent(time()))
+            end,
+            tick_interval = 0.05)
     else
         port = port
         server = ManyUITUI.launch(rain_app, ManyUI.WebNative(); port = port, wait = false)

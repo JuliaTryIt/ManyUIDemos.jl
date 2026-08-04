@@ -12,6 +12,7 @@
 
 using ManyUI, ManyUITUI
 using ManyUIWeb
+using CImGui, GLFW, ModernGL
 import ManyUICImGui
 
 const HEAD = Style(; fg = rgb(0xbb, 0xf7, 0xd0), bold = true)
@@ -191,6 +192,19 @@ function main()
             ManyUITUI.stop!(app.driver)
             println("stopped")
         end
+    elseif mode == "cimguitui"
+        # Animated demo: build the App manually so a Timer can tick the
+        # snake while the ImGui render loop blocks on the main thread.
+        driver = ManyUITUI.make_driver(ManyUICImGui.ImGuiTUIBackend())
+        app = ManyUITUI.App(snake_app(), driver; stylesheet = SHEET)
+        ManyUICImGui.launch_tui_app!(app;
+            title = "Snake CImGui TUI",
+            on_tick = () -> begin
+                r = app.root
+                r isa Snake && step!(r)
+                ManyUITUI.post!(app, ManyUI.TickEvent(time()))
+            end,
+            tick_interval = 0.12)
     else
         port = port
         server = ManyUITUI.launch(snake_app, ManyUI.WebNative(); port = port)
