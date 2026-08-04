@@ -309,6 +309,23 @@ function ManyUI.render(model::HubModel, ::TUI)
     )
 end
 
+# The ManyUICImGui native extension (`ManyUICImGuiCImGuiExt`) only
+# loads once ALL its weakdeps -- CImGui, GLFW, HarfBuzz, ModernGL --
+# are imported into the session. HarfBuzz.jl historically had
+# `__precompile__(false)`, so it could not be baked into the
+# extension's precompile cache and had to be imported explicitly.
+# Import them here (HubApp inherits ManyUIDemos' deps) so the
+# extension initializes before any cimgui/cimguitui launch.
+function _ensure_cimgui_deps!()
+    for name in (:CImGui, :GLFW, :HarfBuzz, :ModernGL)
+        try
+            @eval import $(name)
+        catch
+        end
+    end
+    return nothing
+end
+
 const HUB_BACKENDS = Dict{String,Function}(
     "tui"      => (model; kwargs...) ->
         ManyUITUI.launch(model, TUI(); stylesheet=get(kwargs, :stylesheet,
@@ -322,13 +339,22 @@ const HUB_BACKENDS = Dict{String,Function}(
                          backend=ManyUIWeb.WebBackend(),
                          port=get(kwargs, :port, 8000),
                          stylesheet=get(kwargs, :stylesheet, HUB_SHEET)),
-    "cimgui"   => (model; kwargs...) ->
-        ManyUICImGui.launch_manyui(() -> ManyUI.render(model, TUI());
-                                   title="ManyUI Hub (CImGui)"),
-    "cimguitui"=> (model; kwargs...) ->
-        ManyUICImGui.launch_tui(() -> ManyUI.render(model, TUI());
-                                title="ManyUI Hub (CImGui TUI)",
-                                stylesheet=HUB_SHEET),
+    "cimgui"   => (model; kwargs...) -> begin
+        _ensure_cimgui_deps!()
+        # invokelatest: the extension adds its `launch_manyui` method
+        # at runtime (after this lambda was precompiled against the
+        # stub), so force redispatch against the current method table.
+        Base.invokelatest(ManyUICImGui.launch_manyui,
+                          () -> ManyUI.render(model, TUI());
+                          title="ManyUI Hub (CImGui)")
+    end,
+    "cimguitui"=> (model; kwargs...) -> begin
+        _ensure_cimgui_deps!()
+        Base.invokelatest(ManyUICImGui.launch_tui,
+                          () -> ManyUI.render(model, TUI());
+                          title="ManyUI Hub (CImGui TUI)",
+                          stylesheet=HUB_SHEET)
+    end,
 )
 
 # Web-native hub needs the server to block until the user returns, so the
@@ -451,6 +477,13 @@ function run_hub(port::Int=8000; hub_backend::String="tui")
             end
 
             try
+                # Load the CImGui extension weakdeps before including the
+                # demo so the extension initializes before main() calls
+                # launch_tui/launch_manyui. The demo imports CImGui/GLFW/
+                # ModernGL itself, but HarfBuzz must also be loaded.
+                if model.mode in ("cimgui", "cimguitui")
+                    _ensure_cimgui_deps!()
+                end
                 # We use a persistent module per demo so Revise.jl works correctly
                 mod_sym = Symbol("Demo_", replace(model.selected, r"[^a-zA-Z0-9]" => ""))
                 if !isdefined(Main, mod_sym)
