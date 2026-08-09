@@ -14,7 +14,10 @@
 
 using ManyUI, ManyUITUI
 using ManyUIWeb
-include(joinpath(@__DIR__, "_optional_cimgui.jl"))
+# `Base.include(@__MODULE__, ...)` and not a bare `include`: a demo is
+# also included into a fresh `Module` by the test harness, and a bare
+# module has no `include` binding of its own.
+Base.include(@__MODULE__, joinpath(@__DIR__, "_optional_cimgui.jl"))
 
 const ELEMENTS = [
     ("Hydrogen", "H", 1, 1.008), ("Helium", "He", 2, 4.003),

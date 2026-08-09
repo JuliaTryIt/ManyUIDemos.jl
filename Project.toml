@@ -4,21 +4,33 @@ version = "0.1.0"
 authors = ["Sebastien Celles <s.celles@gmail.com>"]
 
 [deps]
-CImGui = "5d785b6c-b76f-510e-a07c-3070796c7e87"
 Comonicon = "863f3e99-da2a-4334-8734-de3dacbe5542"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 DefaultApplication = "3f0dd361-4fe0-5fc6-8523-80b14ec94d85"
-GLFW = "f7f18e0c-5ee9-5ccd-a5bf-e8befd85ed98"
 HarfBuzz = "9e8b9c2b-5c3e-4e6f-b1a4-2c0f6b4f3e2a"
 ManyUI = "4f14d67d-91c5-4d6b-929d-6ac291535b21"
 ManyUICImGui = "18e426b3-1956-47f5-93db-1e658e915efb"
 ManyUICLI = "b1b9728b-eec2-4db8-8e84-d6ab07269d58"
 ManyUITUI = "5c52c6f3-12e3-46fb-a0b2-3b2e56cfefb8"
 ManyUIWeb = "860779a1-443a-41b2-91c8-bd1f5a115e61"
-ModernGL = "66fc600b-dfda-50eb-8b99-91cfa97b1301"
 Tachikoma = "468859d6-42d8-48b7-8ad9-1d312e0e3b0a"
 
 [weakdeps]
+# CImGui, GLFW and ModernGL are WEAK because they cannot share an
+# environment with HarfBuzz today: HarfBuzz.jl needs HarfBuzz_jll 100.x
+# for hb_draw_funcs_create, while GLFW pulls libdecor_jll -> Pango_jll,
+# which is only built against the 2.x series. Loosening HarfBuzz.jl's
+# bound resolves and then fails at LOAD with "could not load symbol
+# hb_draw_funcs_create", so the bound is a true compatibility claim and
+# the two really are exclusive.
+#
+# HarfBuzz wins the base environment because the unicode demo needs it.
+# The demos already survive the GPU stack being absent -- see
+# demos/_optional_cimgui.jl -- so a CImGui mode simply reports what is
+# missing. Run those demos from an environment that adds the three.
+ModernGL = "66fc600b-dfda-50eb-8b99-91cfa97b1301"
+GLFW = "f7f18e0c-5ee9-5ccd-a5bf-e8befd85ed98"
+CImGui = "5d785b6c-b76f-510e-a07c-3070796c7e87"
 # An extension TRIGGER must live here and not in [deps]: Julia only
 # treats a package as a trigger when it is weak, so declaring it as a
 # hard dependency both forced it on every consumer AND left the
@@ -46,7 +58,11 @@ ManyUICImGui = {url = "https://github.com/s-celles/ManyUICImGui.jl.git"}
 # registered by registering the one above it. Without this, resolving
 # this project fails outright with "expected package TachikomaDemos to
 # be registered".
-TachikomaDemos = {url = "https://github.com/kahliburke/Tachikoma.jl", subdir = "demos/TachikomaDemos"}
+# The GitHub URL the General registry records for Tachikoma 404s; the
+# repository is self-hosted. The registry entry is enough to INSTALL
+# Tachikoma (Pkg serves a tarball), but a subdirectory package has to
+# be cloned, so it needs the URL that actually answers.
+TachikomaDemos = {url = "https://git.kahliburke.com/kahliburke/Tachikoma.jl", subdir = "demos/TachikomaDemos"}
 
 [compat]
 Aqua = "0.8"
@@ -57,6 +73,7 @@ DefaultApplication = "1.1.0"
 GLFW = "3.4.6"
 HarfBuzz = "0.1"
 ManyUI = "0.1"
+ManyUICImGui = "0.1"
 ManyUICLI = "0.1"
 ManyUITUI = "0.1"
 ManyUIWeb = "0.1"
@@ -76,4 +93,7 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 TestItemRunner = "f8b46487-2199-4994-9208-9a1283c18c0a"
 
 [targets]
-test = ["Aqua", "Test", "TestItemRunner"]
+# TachikomaDemos is named here because `Pkg.test` builds a temporary
+# project from this target, and a [sources] entry is only valid for a
+# package that project also names.
+test = ["Aqua", "Test", "TestItemRunner", "TachikomaDemos"]

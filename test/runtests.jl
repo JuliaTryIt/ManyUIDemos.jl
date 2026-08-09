@@ -3,7 +3,14 @@ using TestItemRunner
 @testitem "Aqua.jl" begin
     import Aqua
     import ManyUIDemos
-    Aqua.test_all(ManyUIDemos)
+    # DefaultApplication, HarfBuzz and Tachikoma are imported through
+    # `@eval import` at the point a backend is chosen (see hub.jl), so
+    # Aqua's static scan cannot see them and calls them stale. They are
+    # declared on purpose: dropping one turns a launch mode into an
+    # UndefVarError.
+    Aqua.test_all(ManyUIDemos;
+                  stale_deps = (; ignore = [:DefaultApplication,
+                                            :HarfBuzz, :Tachikoma]))
 end
 
 @testitem "Demos Compile" begin
