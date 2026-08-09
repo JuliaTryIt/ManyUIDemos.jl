@@ -11,8 +11,7 @@
 
 using ManyUI, ManyUITUI
 using ManyUIWeb
-import CImGui, GLFW, ModernGL
-import ManyUICImGui
+include(joinpath(@__DIR__, "_optional_cimgui.jl"))
 
 const SHEET = parse_css("""
     #screen  { layout: column; padding: 1; }
@@ -133,8 +132,10 @@ function main()
             ManyUIWeb.stop!(server)
         end
     elseif mode == "cimgui"
+        _need_cimgui()
         ManyUICImGui.launch_manyui(gallery_app; title="Gallery CImGui")
     elseif mode == "cimguitui"
+        _need_cimgui()
         ManyUICImGui.launch_tui(gallery_app; title="Gallery CImGui TUI",
                                 stylesheet = SHEET)
     else

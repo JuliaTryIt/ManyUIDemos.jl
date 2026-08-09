@@ -14,8 +14,7 @@
 
 using ManyUI, ManyUITUI
 using ManyUIWeb
-import CImGui, GLFW, ModernGL
-import ManyUICImGui
+include(joinpath(@__DIR__, "_optional_cimgui.jl"))
 
 const ELEMENTS = [
     ("Hydrogen", "H", 1, 1.008), ("Helium", "He", 2, 4.003),
@@ -74,8 +73,10 @@ function main()
     elseif mode == "webtui"
         ManyUITUI.launch(table_app; backend = WebBackend(port = port), stylesheet = SHEET)
     elseif mode == "cimgui"
+        _need_cimgui()
         ManyUICImGui.launch_manyui(table_app; title="DataTable CImGui")
     elseif mode == "cimguitui"
+        _need_cimgui()
         ManyUICImGui.launch_tui(table_app; title="DataTable CImGui TUI",
                                 stylesheet = SHEET)
     else

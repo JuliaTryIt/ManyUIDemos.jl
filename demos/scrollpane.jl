@@ -12,8 +12,7 @@
 
 using ManyUI, ManyUITUI
 using ManyUIWeb
-using CImGui, GLFW, ModernGL
-import ManyUICImGui
+include(joinpath(@__DIR__, "_optional_cimgui.jl"))
 
 const LEVELS = [("INFO", rgb(0x7d, 0xd3, 0xfc)),
                 ("WARN", rgb(0xfb, 0xbf, 0x24)),
@@ -173,6 +172,7 @@ function main()
     elseif mode == "webtui"
         ManyUITUI.launch(log_app; backend = WebBackend(port = port), stylesheet = SHEET)
     elseif mode == "cimguitui"
+        _need_cimgui()
         ManyUICImGui.launch_tui(log_app; title="Scrollpane CImGui TUI",
                                 stylesheet = SHEET)
     else

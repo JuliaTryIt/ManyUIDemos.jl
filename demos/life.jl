@@ -11,8 +11,7 @@
 
 using ManyUI, ManyUITUI
 using ManyUIWeb
-using CImGui, GLFW, ModernGL
-import ManyUICImGui
+include(joinpath(@__DIR__, "_optional_cimgui.jl"))
 
 """
 A Game of Life board. The grid is DATA, not a widget per cell: a
@@ -141,6 +140,7 @@ function main()
             println("stopped")
         end
     elseif mode == "cimguitui"
+        _need_cimgui()
         driver = ManyUITUI.make_driver(ManyUICImGui.ImGuiTUIBackend())
         app = ManyUITUI.App(life_app(), driver; stylesheet = SHEET)
         ManyUICImGui.launch_tui_app!(app;

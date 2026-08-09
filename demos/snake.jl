@@ -12,8 +12,7 @@
 
 using ManyUI, ManyUITUI
 using ManyUIWeb
-using CImGui, GLFW, ModernGL
-import ManyUICImGui
+include(joinpath(@__DIR__, "_optional_cimgui.jl"))
 
 const HEAD = Style(; fg = rgb(0xbb, 0xf7, 0xd0), bold = true)
 const BODY = Style(; fg = rgb(0x22, 0xc5, 0x5e))
@@ -193,6 +192,7 @@ function main()
             println("stopped")
         end
     elseif mode == "cimguitui"
+        _need_cimgui()
         # Animated demo: build the App manually so a Timer can tick the
         # snake while the ImGui render loop blocks on the main thread.
         driver = ManyUITUI.make_driver(ManyUICImGui.ImGuiTUIBackend())
