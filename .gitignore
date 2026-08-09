@@ -25,6 +25,13 @@
 # 5. Tests
 !/test/**/*.jl
 
+# 5b. The runnable demos. They are the point of this package and were
+#     tracked only because they had been force-added: with no rule here,
+#     `git add` silently ignored every NEW demo file, and one shipped as
+#     eight demos including a helper that was not in the repository.
+!/demos/**/*.jl
+!/demos/**/*.md
+
 # 6. Documentation sources (docs/build/ is generated -- see 8)
 !/docs/Project.toml
 !/docs/make.jl
