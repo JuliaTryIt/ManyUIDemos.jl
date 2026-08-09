@@ -21,7 +21,9 @@ using ManyUIWeb
 Base.include(@__MODULE__, joinpath(@__DIR__, "_optional_cimgui.jl"))
 
 const SHEET = parse_css("""
-    #screen   { layout: column; background: var(--bg); color: var(--text); }
+    #frame    { layout: column; padding: 0 1; border: round var(--border);
+                background: var(--bg); color: var(--text); }
+    #screen   { layout: column; grow: 1; }
     #tabs     { height: 1; shrink: 0; }
     #status   { border: round var(--border); height: 2; shrink: 0; }
     #logbox   { border: round var(--border); grow: 1; }
@@ -50,10 +52,14 @@ argument for rich text over a widget per fragment.
 """
 function log_row(e::LogEntry)
     tok = get(LEVEL_TOKEN, e.level, :text_dim)
-    return RichText(TextRun(e.at, Style(fg = token(:text_dim))),
+    # The stamp and the level CARRY; the message RECEDES. A log is
+    # scanned down its left edge, so the columns a reader scans are the
+    # bright ones and the prose behind them is dim -- which is the
+    # opposite of the obvious choice.
+    return RichText(TextRun(e.at, Style(fg = token(:text))),
                     TextRun(" " * rpad(String(e.level), 5),
                             Style(fg = token(tok), bold = true)),
-                    TextRun(" " * e.text))
+                    TextRun(" " * e.text, Style(fg = token(:text_dim))))
 end
 
 """
@@ -90,17 +96,21 @@ function monitor_app()
         TextRun("* ", Style(fg = token(:success), bold = true)),
         TextRun("ManyUI monitor "),
         TextRun("v0.1.0", Style(fg = token(:accent))),
-        TextRun(" -- :2828 -- "),
+        TextRun(" \u00b7 :2828 \u00b7 "),
         TextRun("running", Style(fg = token(:success)))); id = :uptime)
     counts = Label(RichText(
         TextRun("Gate: "), TextRun("2", Style(fg = token(:accent))),
-        TextRun(" sessions -- Tool calls: "),
+        TextRun(" sessions \u00b7 Tool calls: "),
         TextRun("1", Style(fg = token(:accent)))); id = :counts)
 
     status = Container(uptime, counts; id = :status,
                        title = "Server Status")
 
-    log = List(entries; format = log_row, id = :log)
+    # SelectMode.NONE: a log is READ, not chosen from. `List` is a
+    # selection widget and this is the closest ManyUI has to a pane of
+    # rich lines -- see the gap list below.
+    log = List(entries; format = log_row, mode = SelectMode.NONE,
+               id = :log)
     logbox = Container(log; id = :logbox,
                        title = RichText(
                            TextRun("Server Log "),
@@ -109,38 +119,53 @@ function monitor_app()
 
     footer = StatusBar(; id = :footer,
                        left = RichText(
+                           TextRun("\u283f ", Style(fg = token(:success))),
                            TextRun("localhost:2828",
                                    Style(fg = token(:accent))),
-                           TextRun(" -- 2 sessions")),
+                           TextRun(" \u00b7 2 sessions")),
                        right = RichText(
                            TextRun("tab", Style(fg = token(:warning))),
                            TextRun(":focus  "),
                            TextRun("q", Style(fg = token(:warning))),
                            TextRun(":quit")))
 
-    return Container(tabs, status, logbox, footer; id = :screen)
+    screen = Container(tabs, status, logbox, footer; id = :screen)
+    # The OUTER frame Kaimon puts round everything. One caption, at the
+    # left -- see gap 1.
+    return Container(screen; id = :frame, title = "ManyUI monitor")
 end
 
 # --- WHAT THIS SCREEN CANNOT DO YET ----------------------------------
 #
 # Written down because a rebuild that reports only its successes proves
-# nothing. Three gaps, found by building it and not by reading a list:
+# nothing. Compared side by side against the real Kaimon Server tab,
+# four things are the FRAMEWORK's and not this file's:
 #
-#   1. The outer frame carries ONE caption. Kaimon's has a title at the
-#      left AND a mark at the right of the same top edge, and
-#      `border_title` has one slot with one alignment. A border FOOTER
-#      is already on the roadmap; a second title on the same edge is
-#      not, and should be.
+#   1. THE TAB STRIP IS FLAT. Kaimon draws each tab as its own bordered
+#      box, the boxes joined into a strip, and the ACTIVE one open at
+#      the bottom so it reads as continuous with the pane beneath it.
+#      `TabStrip` paints a row of captions and reverses the active one;
+#      there is no boxed style, and the joinery is the interesting part.
 #
-#   2. The footer is a ROW, not the frame's bottom edge. Kaimon fuses
-#      its status line into the border, which saves a line on an
-#      80x24 terminal -- the same border-footer gap, from the other
-#      side.
+#   2. ONE CAPTION PER EDGE. Kaimon's outer frame has a title at the
+#      left AND a mark at the right of the same top edge.
+#      `border_title` has one slot and one alignment.
 #
-#   3. The log pane does not follow its own tail. Nothing here keeps a
-#      `List` pinned to the last row as rows arrive; an application
-#      does it by hand with `scroll_to!`. Worth a `follow` flag on the
-#      row widgets.
+#   3. THE STATUS BAR IS A ROW, not the frame's bottom edge. Kaimon
+#      fuses its status line INTO the border, which buys back a line on
+#      an 80x24 terminal. A border footer is on the roadmap.
+#
+#   4. A LOG IS NOT A SELECTION. `List` is the closest ManyUI has to a
+#      pane of rich lines, and it is built around a cursor -- so a log
+#      pane borrows a widget whose whole point is choosing a row.
+#      `SelectMode.NONE` removes the semantics, not the shape. What is
+#      missing is a scrollable pane of `RichText` lines: `MarkdownPane`
+#      is one for one input format, and a plain one would serve a log,
+#      a transcript and a diff.
+#
+# Two more, already recorded on the roadmap: no interactive controls in
+# a border caption (Kaimon's `[wrap:off] [F]ollow:on` live in one), and
+# no tail-following on a row widget.
 #
 # Everything else the Server tab does, this does.
 
