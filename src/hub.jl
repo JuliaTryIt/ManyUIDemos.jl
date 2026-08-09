@@ -64,6 +64,7 @@ const COMPAT_MATRIX = Dict(
     "life.jl"      => (tui=true, web=true, webtui=true, cimgui=false, cimguitui=true),
     "rain.jl"      => (tui=true, web=true, webtui=true, cimgui=false, cimguitui=true),
     "snake.jl"     => (tui=true, web=true, webtui=true, cimgui=false, cimguitui=true),
+    "monitor.jl"   => (tui=true, web=true, webtui=true, cimgui=true, cimguitui=true),
 )
 const DEMO_PATHS = Dict{String, String}()
 
@@ -75,7 +76,8 @@ const DEMO_DESCRIPTIONS = Dict(
     "unicode.jl"   => "Unicode & Wide Chars\n\nValidates the ANSI encoder's ability to render complex emojis, CJK wide characters, and zero-width joiners accurately.",
     "life.jl"      => "Conway's Game of Life\n\nAn animated simulation of cellular automata. (Web Only)",
     "rain.jl"      => "Digital Rain\n\nA Matrix-inspired falling text animation using dynamic colors. (Web Only)",
-    "snake.jl"     => "Snake Game\n\nA fully playable classic Snake game built entirely with UI primitives. (Web Only)"
+    "snake.jl"     => "Snake Game\n\nA fully playable classic Snake game built entirely with UI primitives. (Web Only)",
+    "monitor.jl"   => "Server Monitor\n\nA deliberate rebuild of one real screen -- the Server tab of the Kaimon TUI. Captioned frames, a tab strip with coloured shortcut keys, a log list that colours only its level, a status bar, and a themed palette."
 )
 
 function register_demo!(name::String, description::String, path::String, compat=nothing)
@@ -396,10 +398,23 @@ const DEMO_FLUX_MESSAGE = Dict{String,String}(
 
 function run_hub(port::Int=8000; hub_backend::String="tui")
     demos_dir = joinpath(pkgdir(@__MODULE__), "demos")
-    demo_files = filter(f -> endswith(f, ".jl") && f != "tachikoma_web.jl", readdir(demos_dir))
+    # A leading underscore means SHARED HELPER, not a demo:
+    # `_optional_cimgui.jl` is included BY the demos and is not one, and
+    # scanning it in made the hub die on a KeyError before showing a
+    # single entry.
+    demo_files = filter(readdir(demos_dir)) do f
+        endswith(f, ".jl") && !startswith(f, "_") && f != "tachikoma_web.jl"
+    end
 
     for f in demo_files
         DEMO_PATHS[f] = joinpath(demos_dir, f)
+        # A demo dropped into the directory without a COMPAT_MATRIX
+        # entry used to take the hub down with a KeyError before it drew
+        # anything. Assume the portable backends and let the demo itself
+        # refuse the others.
+        haskey(COMPAT_MATRIX, f) || (COMPAT_MATRIX[f] =
+            (tui = true, web = true, webtui = true,
+             cimgui = false, cimguitui = false))
     end
 
     all_demos = sort(collect(keys(DEMO_PATHS)))
