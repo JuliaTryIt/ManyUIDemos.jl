@@ -17,13 +17,36 @@ ManyUITUI = "5c52c6f3-12e3-46fb-a0b2-3b2e56cfefb8"
 ManyUIWeb = "860779a1-443a-41b2-91c8-bd1f5a115e61"
 ModernGL = "66fc600b-dfda-50eb-8b99-91cfa97b1301"
 Tachikoma = "468859d6-42d8-48b7-8ad9-1d312e0e3b0a"
+
+[weakdeps]
+# An extension TRIGGER must live here and not in [deps]: Julia only
+# treats a package as a trigger when it is weak, so declaring it as a
+# hard dependency both forced it on every consumer AND left the
+# extension unable to fire.
 TachikomaDemos = "e83297aa-c13c-4c35-9829-13c52dfbaaf0"
 
 [extensions]
 ManyUIDemosTachikomaExt = "TachikomaDemos"
 
 [sources]
-HarfBuzz = {path = "../HarfBuzz.jl"}
+# Was {path = "../HarfBuzz.jl"}, which resolved to a sibling of this
+# package -- true before the stack moved into the ManyUIDev
+# superproject, false since, and never true for anyone cloning this
+# package on its own.
+HarfBuzz = {url = "https://github.com/s-celles/HarfBuzz.jl.git"}
+# The ManyUI stack is not registered either. Same form ManyUICImGui
+# already uses, so the two agree on how a sibling is found.
+ManyUI = {url = "https://github.com/s-celles/ManyUI.jl.git"}
+ManyUITUI = {url = "https://github.com/s-celles/ManyUITUI.jl.git"}
+ManyUIWeb = {url = "https://github.com/s-celles/ManyUIWeb.jl.git"}
+ManyUICLI = {url = "https://github.com/s-celles/ManyUICLI.jl.git"}
+ManyUICImGui = {url = "https://github.com/s-celles/ManyUICImGui.jl.git"}
+# Tachikoma itself is registered; TachikomaDemos is a package in a
+# SUBDIRECTORY of its repository, and a subdirectory package is not
+# registered by registering the one above it. Without this, resolving
+# this project fails outright with "expected package TachikomaDemos to
+# be registered".
+TachikomaDemos = {url = "https://github.com/kahliburke/Tachikoma.jl", subdir = "demos/TachikomaDemos"}
 
 [compat]
 Aqua = "0.8"
@@ -46,6 +69,9 @@ julia = "1.12"
 
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
+# Also listed here because Pkg only accepts a [sources] entry for a
+# package named in `deps` or `extras` -- a weakdep alone is not enough.
+TachikomaDemos = "e83297aa-c13c-4c35-9829-13c52dfbaaf0"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 TestItemRunner = "f8b46487-2199-4994-9208-9a1283c18c0a"
 
