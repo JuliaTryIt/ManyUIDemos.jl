@@ -148,6 +148,13 @@ function ManyUI.on_event!(s::Snake, d::Dispatch{KeyEvent})
     return nothing
 end
 
+function ManyUI.on_event!(s::Snake, d::Dispatch{TickEvent})
+    step!(s)
+    ManyUI.notify_resize!(s)
+    consume!(d)
+    return nothing
+end
+
 snake_app() = Snake(40, 16)
 
 const SHEET = parse_css("""
@@ -183,9 +190,6 @@ function main()
         try
             while app.running
                 sleep(0.12)
-                r = app.root
-                r isa Snake || continue
-                step!(r)
                 tick!(app)
             end
         catch e
@@ -195,7 +199,7 @@ function main()
             println("stopped")
         end
     elseif mode == "cimguitui"
-        _need_cimgui()
+        @need_cimgui()
         # Animated demo: build the App manually so a Timer can tick the
         # snake while the ImGui render loop blocks on the main thread.
         driver = ManyUITUI.make_driver(ManyUICImGui.ImGuiTUIBackend())
@@ -203,25 +207,18 @@ function main()
         ManyUICImGui.launch_tui_app!(app;
             title = "Snake CImGui TUI",
             on_tick = () -> begin
-                r = app.root
-                r isa Snake && step!(r)
                 ManyUITUI.post!(app, ManyUI.TickEvent(time()))
             end,
             tick_interval = 0.12)
-    else
+    elseif mode == "webtui" || mode == "web"
         port = port
-        server = ManyUITUI.launch(snake_app, ManyUI.WebNative(); port = port)
+        server = ManyUITUI.launch(snake_app; backend = WebBackend(port = port))
         println("Snake running at ", ManyUIWeb.url(server))
         println("Ctrl-C to stop.")
         try
             while true
                 sleep(0.12)
-                for s in values(server.sessions)
-                    r = s.app.root
-                    r isa Snake || continue
-                    step!(r)
-                    tick!(s.app)
-                end
+                ManyUITUI.post!(server, ManyUI.TickEvent(time()))
             end
         catch e
             e isa InterruptException || rethrow()
