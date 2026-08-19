@@ -285,6 +285,11 @@ function ManyUI.render(model::HubModel, ::TUI)
                 ManyUI.execute!(model, LaunchDemo(model.selected))
                 app = ManyUI.app(btn)
                 app !== nothing && ManyUITUI.quit!(app)
+                # The NATIVE cimgui hub has no App behind its widgets,
+                # so there is nothing to quit and the window would sit
+                # there after the click. Ask it to close instead. A
+                # no-op under every other backend.
+                Base.invokelatest(ManyUICImGui.request_close!)
             end; classes=[:primary_btn], id=:launch_btn),
             id=:btn_panel
         );
@@ -306,6 +311,7 @@ function ManyUI.render(model::HubModel, ::TUI)
             ManyUI.execute!(model, QuitHub())
             app = ManyUI.app(btn)
             app !== nothing && ManyUITUI.quit!(app)
+            Base.invokelatest(ManyUICImGui.request_close!)
         end);
         id=:screen
     )
@@ -316,12 +322,25 @@ end
 # are imported into the session. HarfBuzz.jl historically had
 # `__precompile__(false)`, so it could not be baked into the
 # extension's precompile cache and had to be imported explicitly.
-# Import them here (HubApp inherits ManyUIDemos' deps) so the
-# extension initializes before any cimgui/cimguitui launch.
+# Import them here so the extension initializes before any
+# cimgui/cimguitui launch.
+#
+# Into `Main`, and NOT into this module. `@eval` here would evaluate in
+# `HubApp`, whose package is ManyUIDemos -- and there the four are
+# WEAK dependencies, so the import throws
+#
+#     ArgumentError: Package ManyUIDemos does not have CImGui in its
+#     dependencies
+#
+# which the `catch` then swallowed. The function reported success from
+# an environment that had all four installed, and the extension stayed
+# asleep. `Main` resolves against the ACTIVE PROJECT, which is where
+# they actually live (CImGuiEnv). The demos got this right by accident:
+# each is included into a module of `Main` and imports there.
 function _ensure_cimgui_deps!()
     for name in (:CImGui, :GLFW, :HarfBuzz, :ModernGL)
         try
-            @eval import $(name)
+            Core.eval(Main, :(import $(name)))
         catch
         end
     end
@@ -428,6 +447,28 @@ function run_hub(port::Int=8000; hub_backend::String="tui")
               "Valid: $(join(sort(collect(keys(HUB_BACKENDS))), ", "))")
     end
 
+    # A CImGui hub in an environment with no GPU stack used to reach the
+    # stub in `ManyUICImGui/src` and take the process down with an
+    # ArgumentError and a stacktrace. Say what is missing and where the
+    # working environment is instead.
+    if hub_backend in ("cimgui", "cimguitui")
+        _ensure_cimgui_deps!()
+        if !ManyUICImGui.native_available()
+            println("\n⚠️  The CImGui backend is not available in this environment.")
+            println("   Its four extension triggers -- CImGui, GLFW, HarfBuzz and")
+            println("   ModernGL -- are WEAK dependencies here, because the GPU stack")
+            println("   cannot share this environment (see Project.toml). They live in")
+            println("   `CImGuiEnv`, so run the hub from there:")
+            println()
+            println("       just hub-cimgui $hub_backend")
+            println()
+            println("   which is `julia --project=CImGuiEnv -e 'using ManyUIDemos;")
+            println("   ManyUIDemos.command_main([\"hub\", \"--backend\",")
+            println("   \"$hub_backend\"])'`. First time: `just instantiate-cimgui`.\n")
+            return nothing
+        end
+    end
+
     while true
         model = HubModel(all_demos, isempty(all_demos) ? "" : all_demos[1],
                          "tui", false, false, port)
@@ -514,7 +555,9 @@ function run_hub(port::Int=8000; hub_backend::String="tui")
                 end
 
                 if isdefined(m, :main)
-                    Core.eval(m, :(Base.invokelatest(main)))
+                    # Extract the main function in the latest world to avoid world-age binding warnings
+                    main_func = Base.invokelatest(Core.eval, m, :main)
+                    Base.invokelatest(main_func)
                 else
                     println("Error: No main() function found in $(model.selected)")
                 end
