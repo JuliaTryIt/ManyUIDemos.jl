@@ -25,6 +25,13 @@
 # 5. Tests
 !/test/**/*.jl
 
+# 5a. The GPU environment for the CImGui demo modes. Its Project.toml
+#     is a SOURCE file -- it names the four extension triggers and
+#     resolves the unregistered siblings -- and without it `just
+#     hub-cimgui` and `just demo-cimgui` cannot work from a fresh
+#     clone. The Manifest stays ignored, like every other one here.
+!/CImGuiEnv/Project.toml
+
 # 5b. The runnable demos. They are the point of this package and were
 #     tracked only because they had been force-added: with no rule here,
 #     `git add` silently ignored every NEW demo file, and one shipped as

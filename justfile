@@ -9,6 +9,23 @@ hub:
 hubb backend="tui":
 	julia --project=@. -e 'using ManyUIDemos; ManyUIDemos.command_main(["hub", "--backend", "{{backend}}"])'
 
+# The base environment has no CImGui/GLFW/ModernGL -- they are weak
+# dependencies there -- so a cimgui mode launched by `just hub` or
+# `just hubb` can only report what is missing. Use the recipes below
+# for cimgui and cimguitui.
+
+# Run the hub from CImGuiEnv, the environment where CImGui modes work
+hub-cimgui backend="cimguitui":
+	julia --project=CImGuiEnv -e 'using ManyUIDemos; ManyUIDemos.command_main(["hub", "--backend", "{{backend}}"])'
+
+# Run one demo file in a CImGui mode (cimgui or cimguitui)
+demo-cimgui demo="gallery.jl" mode="cimguitui":
+	julia --project=CImGuiEnv demos/{{demo}} {{mode}}
+
+# Resolve and precompile CImGuiEnv (first run, or after a pull)
+instantiate-cimgui:
+	julia --project=CImGuiEnv -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
+
 # Run the architecture harness demo
 harness:
 	julia --project=@. -e 'using ManyUIDemos; ManyUIDemos.command_main(["harness"])'

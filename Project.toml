@@ -16,18 +16,20 @@ ManyUIWeb = "860779a1-443a-41b2-91c8-bd1f5a115e61"
 Tachikoma = "468859d6-42d8-48b7-8ad9-1d312e0e3b0a"
 
 [weakdeps]
-# CImGui, GLFW and ModernGL are WEAK because they cannot share an
-# environment with HarfBuzz today: HarfBuzz.jl needs HarfBuzz_jll 100.x
-# for hb_draw_funcs_create, while GLFW pulls libdecor_jll -> Pango_jll,
-# which is only built against the 2.x series. Loosening HarfBuzz.jl's
-# bound resolves and then fails at LOAD with "could not load symbol
-# hb_draw_funcs_create", so the bound is a true compatibility claim and
-# the two really are exclusive.
+# CImGui, GLFW and ModernGL are WEAK so that this environment stays
+# light: a GPU stack is a large download, and nothing here needs one to
+# BUILD a widget tree. Everything except the two CImGui modes runs
+# without them, and a CImGui mode reports what is missing rather than
+# failing on an UndefVarError -- see demos/_optional_cimgui.jl.
 #
-# HarfBuzz wins the base environment because the unicode demo needs it.
-# The demos already survive the GPU stack being absent -- see
-# demos/_optional_cimgui.jl -- so a CImGui mode simply reports what is
-# missing. Run those demos from an environment that adds the three.
+# They were once weak for a harder reason: HarfBuzz (which the unicode
+# demo needs) pinned HarfBuzz_jll to 100.x, which held GLFW_jll at
+# 3.3.9, which segfaults inside libcimgui. That conflict is GONE --
+# the fork now admits HarfBuzz_jll 8.5.1 -- so the split is a choice
+# again and not a workaround. See ../upstream-bugs.md entry 2.
+#
+# The GPU modes live in CImGuiEnv/, which adds the three and this
+# package: `just hub-cimgui`, `just demo-cimgui <demo>.jl cimguitui`.
 ModernGL = "66fc600b-dfda-50eb-8b99-91cfa97b1301"
 GLFW = "f7f18e0c-5ee9-5ccd-a5bf-e8befd85ed98"
 CImGui = "5d785b6c-b76f-510e-a07c-3070796c7e87"
@@ -48,11 +50,11 @@ ManyUIDemosTachikomaExt = "TachikomaDemos"
 HarfBuzz = {url = "https://github.com/s-celles/HarfBuzz.jl.git"}
 # The ManyUI stack is not registered either. Same form ManyUICImGui
 # already uses, so the two agree on how a sibling is found.
-ManyUI = {url = "https://github.com/s-celles/ManyUI.jl.git"}
-ManyUITUI = {url = "https://github.com/s-celles/ManyUITUI.jl.git"}
-ManyUIWeb = {url = "https://github.com/s-celles/ManyUIWeb.jl.git"}
-ManyUICLI = {url = "https://github.com/s-celles/ManyUICLI.jl.git"}
-ManyUICImGui = {url = "https://github.com/s-celles/ManyUICImGui.jl.git"}
+ManyUI = {path = "../ManyUI"}
+ManyUITUI = {path = "../ManyUITUI"}
+ManyUIWeb = {path = "../ManyUIWeb"}
+ManyUICLI = {path = "../ManyUICLI"}
+ManyUICImGui = {path = "../ManyUICImGui"}
 # Tachikoma itself is registered; TachikomaDemos is a package in a
 # SUBDIRECTORY of its repository, and a subdirectory package is not
 # registered by registering the one above it. Without this, resolving

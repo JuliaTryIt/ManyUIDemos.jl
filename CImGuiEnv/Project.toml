@@ -1,0 +1,66 @@
+# The environment for the CImGui demo modes.
+#
+# It exists because the GPU stack cannot share the demos' base
+# environment -- see the [weakdeps] comment in ../Project.toml. Run a
+# `cimgui` or `cimguitui` mode with `--project=CImGuiEnv` rather than
+# `--project=@.`.
+#
+# HarfBuzz is a REQUIRED member of this set, not an extra. The backend
+# lives in `ManyUICImGuiCImGuiExt`, declared as
+# `["CImGui", "GLFW", "HarfBuzz", "ModernGL"]`, and a package extension
+# fires only when EVERY trigger is loaded. Without HarfBuzz here the
+# other three loaded, the extension stayed asleep, and `launch_manyui`
+# resolved to the stub that throws "native support requires CImGui,
+# GLFW, HarfBuzz and ModernGL" -- from this environment.
+#
+# THIS ENVIRONMENT WORKS. It did not until HarfBuzz.jl loosened its
+# `HarfBuzz_jll` bound.
+#
+# The history, because the Manifest can drag it back: pinning
+# HarfBuzz_jll to the 100.x series held GLFW_jll down at 3.3.9 (no
+# Pango_jll accepts 100.x, and GLFW 3.4 needs one through
+# libdecor_jll), while libcimgui calls `glfwGetPlatform` -- a GLFW 3.4
+# symbol. The call landed on a null pointer and the process died with
+#
+#     signal 11 (2): Segmentation fault: 11
+#     unknown function (ip: 0x0) at (unknown file)
+#
+# both while precompiling CImGui's GlfwOpenGL backend and at runtime.
+# The s-celles fork now admits `HarfBuzz_jll = "8.5.1, 100.14002"` and
+# guards the one 100.x-only symbol by dlsym, so the environment
+# resolves to GLFW_jll 3.4.1 / HarfBuzz_jll 8.5.1 / Pango_jll 1.58.0
+# and the demos run. See ../../upstream-bugs.md entry 2.
+#
+# If a `signal 11` ever comes back here, check the resolved GLFW_jll
+# FIRST: 3.3.9 means the old bound crept back in.
+
+[deps]
+CImGui = "5d785b6c-b76f-510e-a07c-3070796c7e87"
+GLFW = "f7f18e0c-5ee9-5ccd-a5bf-e8befd85ed98"
+HarfBuzz = "9e8b9c2b-5c3e-4e6f-b1a4-2c0f6b4f3e2a"
+ManyUI = "4f14d67d-91c5-4d6b-929d-6ac291535b21"
+ManyUICImGui = "18e426b3-1956-47f5-93db-1e658e915efb"
+# A [sources] entry is only legal for a package this project also names.
+ManyUICLI = "b1b9728b-eec2-4db8-8e84-d6ab07269d58"
+ManyUIDemos = "296a4d1c-0a1e-4cf4-8057-5bb329aa01cc"
+ManyUITUI = "5c52c6f3-12e3-46fb-a0b2-3b2e56cfefb8"
+ManyUIWeb = "860779a1-443a-41b2-91c8-bd1f5a115e61"
+ModernGL = "66fc600b-dfda-50eb-8b99-91cfa97b1301"
+
+[sources]
+# The registered HarfBuzz.jl is too old for the atlas code, which calls
+# `hb_draw_funcs_create`.
+HarfBuzz = {url = "https://github.com/s-celles/HarfBuzz.jl.git"}
+# The ManyUI stack is unregistered. Paths are relative to THIS file, so
+# they climb two levels: CImGuiEnv -> ManyUIDemos -> the superproject.
+# The demos package itself, so the hub can run from HERE -- the base
+# environment has no GPU stack, so a cimgui mode launched there can only
+# report what is missing. A dependency's own [sources] are ignored (only
+# the ROOT project's count), so every unregistered package ManyUIDemos
+# needs is repeated below.
+ManyUIDemos = {path = ".."}
+ManyUICLI = {path = "../../ManyUICLI"}
+ManyUI = {path = "../../ManyUI"}
+ManyUICImGui = {path = "../../ManyUICImGui"}
+ManyUITUI = {path = "../../ManyUITUI"}
+ManyUIWeb = {path = "../../ManyUIWeb"}
