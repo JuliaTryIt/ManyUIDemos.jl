@@ -143,7 +143,7 @@ function main()
             println("stopped")
         end
     elseif mode == "cimguitui"
-        _need_cimgui()
+        @need_cimgui()
         driver = ManyUITUI.make_driver(ManyUICImGui.ImGuiTUIBackend())
         app = ManyUITUI.App(life_app(), driver; stylesheet = SHEET)
         ManyUICImGui.launch_tui_app!(app;

@@ -175,7 +175,7 @@ function main()
     elseif mode == "webtui"
         ManyUITUI.launch(log_app; backend = WebBackend(port = port), stylesheet = SHEET)
     elseif mode == "cimguitui"
-        _need_cimgui()
+        @need_cimgui()
         ManyUICImGui.launch_tui(log_app; title="Scrollpane CImGui TUI",
                                 stylesheet = SHEET)
     else

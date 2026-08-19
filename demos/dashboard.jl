@@ -113,10 +113,10 @@ function main()
     elseif mode == "webtui"
         ManyUITUI.launch(dashboard_app; backend = WebBackend(port = port), stylesheet = SHEET)
     elseif mode == "cimgui"
-        _need_cimgui()
+        @need_cimgui()
         ManyUICImGui.launch_manyui(dashboard_app; title="Dashboard CImGui")
     elseif mode == "cimguitui"
-        _need_cimgui()
+        @need_cimgui()
         ManyUICImGui.launch_tui(dashboard_app; title="Dashboard CImGui TUI",
                                 stylesheet = SHEET)
     else

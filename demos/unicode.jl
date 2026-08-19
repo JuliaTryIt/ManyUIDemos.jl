@@ -104,10 +104,10 @@ function main()
     elseif mode == "webtui"
         ManyUITUI.launch(unicode_app; backend = WebBackend(port = port), stylesheet = SHEET)
     elseif mode == "cimgui"
-        _need_cimgui()
+        @need_cimgui()
         ManyUICImGui.launch_manyui(unicode_app; title="Unicode CImGui")
     elseif mode == "cimguitui"
-        _need_cimgui()
+        @need_cimgui()
         ManyUICImGui.launch_tui(unicode_app; title="Unicode CImGui TUI",
                                 stylesheet = SHEET)
     else

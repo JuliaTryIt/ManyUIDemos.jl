@@ -135,10 +135,10 @@ function main()
             ManyUIWeb.stop!(server)
         end
     elseif mode == "cimgui"
-        _need_cimgui()
+        @need_cimgui()
         ManyUICImGui.launch_manyui(gallery_app; title="Gallery CImGui")
     elseif mode == "cimguitui"
-        _need_cimgui()
+        @need_cimgui()
         ManyUICImGui.launch_tui(gallery_app; title="Gallery CImGui TUI",
                                 stylesheet = SHEET)
     else
