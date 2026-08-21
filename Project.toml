@@ -16,59 +16,39 @@ ManyUIWeb = "860779a1-443a-41b2-91c8-bd1f5a115e61"
 Tachikoma = "468859d6-42d8-48b7-8ad9-1d312e0e3b0a"
 
 [weakdeps]
-# CImGui, GLFW and ModernGL are WEAK so that this environment stays
-# light: a GPU stack is a large download, and nothing here needs one to
-# BUILD a widget tree. Everything except the two CImGui modes runs
-# without them, and a CImGui mode reports what is missing rather than
-# failing on an UndefVarError -- see demos/_optional_cimgui.jl.
-#
-# They were once weak for a harder reason: HarfBuzz (which the unicode
-# demo needs) pinned HarfBuzz_jll to 100.x, which held GLFW_jll at
-# 3.3.9, which segfaults inside libcimgui. That conflict is GONE --
-# the fork now admits HarfBuzz_jll 8.5.1 -- so the split is a choice
-# again and not a workaround. See ../upstream-bugs.md entry 2.
-#
-# The GPU modes live in CImGuiEnv/, which adds the three and this
-# package: `just hub-cimgui`, `just demo-cimgui <demo>.jl cimguitui`.
-ModernGL = "66fc600b-dfda-50eb-8b99-91cfa97b1301"
-GLFW = "f7f18e0c-5ee9-5ccd-a5bf-e8befd85ed98"
 CImGui = "5d785b6c-b76f-510e-a07c-3070796c7e87"
-# An extension TRIGGER must live here and not in [deps]: Julia only
-# treats a package as a trigger when it is weak, so declaring it as a
-# hard dependency both forced it on every consumer AND left the
-# extension unable to fire.
+GLFW = "f7f18e0c-5ee9-5ccd-a5bf-e8befd85ed98"
+ModernGL = "66fc600b-dfda-50eb-8b99-91cfa97b1301"
 TachikomaDemos = "e83297aa-c13c-4c35-9829-13c52dfbaaf0"
+
+[sources.HarfBuzz]
+url = "https://github.com/s-celles/HarfBuzz.jl.git"
+
+[sources.ManyUI]
+path = "../ManyUI"
+
+[sources.ManyUICImGui]
+path = "../ManyUICImGui"
+
+[sources.ManyUICLI]
+path = "../ManyUICLI"
+
+[sources.ManyUITUI]
+path = "../ManyUITUI"
+
+[sources.ManyUIWeb]
+path = "../ManyUIWeb"
+
+[sources.TachikomaDemos]
+subdir = "demos/TachikomaDemos"
+url = "https://git.kahliburke.com/kahliburke/Tachikoma.jl"
 
 [extensions]
 ManyUIDemosTachikomaExt = "TachikomaDemos"
 
-[sources]
-# Was {path = "../HarfBuzz.jl"}, which resolved to a sibling of this
-# package -- true before the stack moved into the ManyUIDev
-# superproject, false since, and never true for anyone cloning this
-# package on its own.
-HarfBuzz = {url = "https://github.com/s-celles/HarfBuzz.jl.git"}
-# The ManyUI stack is not registered either. Same form ManyUICImGui
-# already uses, so the two agree on how a sibling is found.
-ManyUI = {path = "../ManyUI"}
-ManyUITUI = {path = "../ManyUITUI"}
-ManyUIWeb = {path = "../ManyUIWeb"}
-ManyUICLI = {path = "../ManyUICLI"}
-ManyUICImGui = {path = "../ManyUICImGui"}
-# Tachikoma itself is registered; TachikomaDemos is a package in a
-# SUBDIRECTORY of its repository, and a subdirectory package is not
-# registered by registering the one above it. Without this, resolving
-# this project fails outright with "expected package TachikomaDemos to
-# be registered".
-# The GitHub URL the General registry records for Tachikoma 404s; the
-# repository is self-hosted. The registry entry is enough to INSTALL
-# Tachikoma (Pkg serves a tarball), but a subdirectory package has to
-# be cloned, so it needs the URL that actually answers.
-TachikomaDemos = {url = "https://git.kahliburke.com/kahliburke/Tachikoma.jl", subdir = "demos/TachikomaDemos"}
-
 [compat]
 Aqua = "0.8"
-CImGui = "8.0.0"
+CImGui = "8.0.0, 9"
 Comonicon = "1.0.8"
 Dates = "1"
 DefaultApplication = "1.1.0"
@@ -88,14 +68,9 @@ julia = "1.12"
 
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
-# Also listed here because Pkg only accepts a [sources] entry for a
-# package named in `deps` or `extras` -- a weakdep alone is not enough.
 TachikomaDemos = "e83297aa-c13c-4c35-9829-13c52dfbaaf0"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 TestItemRunner = "f8b46487-2199-4994-9208-9a1283c18c0a"
 
 [targets]
-# TachikomaDemos is named here because `Pkg.test` builds a temporary
-# project from this target, and a [sources] entry is only valid for a
-# package that project also names.
 test = ["Aqua", "Test", "TestItemRunner", "TachikomaDemos"]
