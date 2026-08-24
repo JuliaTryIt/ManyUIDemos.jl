@@ -6,7 +6,7 @@
 
 For the complete API reference, features overview, quickstart guides, and advanced examples, please see the central documentation repository:
 
-👉 **[Read the Documentation (ManyUIDoc)](https://s-celles.github.io/ManyUIDoc.jl/)**
+👉 **[Read the Documentation (ManyUIDoc)](https://juliatryit.github.io/ManyUIDoc.jl/)**
 
 ## Installation
 
