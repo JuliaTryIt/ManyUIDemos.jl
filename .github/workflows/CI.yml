@@ -48,39 +48,16 @@ jobs:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
       - uses: julia-actions/cache@v3
-      - name: Authenticate to private repositories
-        env:
-          MANYUI_READ_TOKEN: ${{ secrets.MANYUI_READ_TOKEN }}
+      - name: Check out the siblings [sources] points at
         shell: bash
         run: |
-          if [ -z "$MANYUI_READ_TOKEN" ]; then
-            echo "::error::Secret MANYUI_READ_TOKEN is not set. Repositories are private and cannot be cloned without it."
-            exit 1
-          fi
-          git config --global \
-            url."https://x-access-token:${MANYUI_READ_TOKEN}@github.com/".insteadOf \
-            "https://github.com/"
-      - name: Check out Tachikoma fork branch
-        shell: bash
-        run: |
-          git clone --depth 1 --branch agent/embedded-terminal-sessions \
-            https://github.com/s-celles/Tachikoma.jl ../Tachikoma
-      - name: Dev unregistered dependencies
-        env:
-          JULIA_PKG_USE_CLI_GIT: "true"
-        shell: julia --color=yes --project=. {0}
-        run: |
-          using Pkg
-          deps = PackageSpec[]
-          push!(deps, PackageSpec(url="https://github.com/s-celles/ManyUI.jl"))
-          push!(deps, PackageSpec(url="https://github.com/s-celles/ManyUITUI.jl"))
-          push!(deps, PackageSpec(url="https://github.com/s-celles/ManyUICLI.jl"))
-          push!(deps, PackageSpec(url="https://github.com/s-celles/ManyUIWeb.jl"))
-          push!(deps, PackageSpec(path=joinpath("..", "Tachikoma")))
-          push!(deps, PackageSpec(
-            path=joinpath("..", "Tachikoma", "demos", "TachikomaDemos"),
-          ))
-          Pkg.develop(deps)
+          set -euo pipefail
+          # Project.toml resolves the ManyUI stack with {path = "../<pkg>"},
+          # i.e. as siblings inside the ManyUIDev superproject. CI checks out
+          # this repository alone, so the siblings have to be placed there.
+          for pkg in ManyUI ManyUITUI ManyUIWeb ManyUICLI ManyUICImGui; do
+            git clone --depth 1 "https://github.com/JuliaTryIt/${pkg}.jl" "../${pkg}"
+          done
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
       - uses: julia-actions/julia-processcoverage@v1
